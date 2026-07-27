@@ -103,7 +103,25 @@ jobs:
           python3 -m http.server 4173 >/tmp/legato-http.log 2>&1 &
           SERVER_PID=$!
           trap 'kill $SERVER_PID || true' EXIT
-          node tools/test-command-list-hairpins.mjs
+          set +e
+          node tools/test-command-list-hairpins.mjs > tools/command-list-browser.txt 2>&1
+          CODE=$?
+          echo "$CODE" > tools/command-list-browser-exit.txt
+          cat tools/command-list-browser.txt
+          exit 0
+
+      - name: Commit exact browser diagnostic when needed
+        run: |
+          if [ "$(cat tools/command-list-browser-exit.txt)" != "0" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add tools/command-list-browser.txt tools/command-list-browser-exit.txt
+            git commit -m "Capture command list browser failure" || true
+            git push origin HEAD:fix/command-list-scroll-hairpins
+          fi
+
+      - name: Stop on browser failure
+        run: test "$(cat tools/command-list-browser-exit.txt)" = "0"
 
       - name: Commit repaired app
         run: |
