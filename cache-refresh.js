@@ -1,7 +1,7 @@
 "use strict";
 (() => {
   const CHECK_EVERY_MS = 30000;
-  const PLACEMENT_FIX_VERSION = "20260727-total-placement-1";
+  const PLACEMENT_FIX_VERSION = "20260727-total-placement-2";
 
   function loadPlacementFix() {
     if (document.querySelector('script[data-legato-placement-fix="' + PLACEMENT_FIX_VERSION + '"]')) return;
@@ -10,6 +10,14 @@
     script.async = false;
     script.dataset.legatoPlacementFix = PLACEMENT_FIX_VERSION;
     script.onerror = () => console.error('[Legato placement] failed to load the notation placement repair');
+    script.onload = () => {
+      const priority = document.createElement('script');
+      priority.src = './notation-placement-priority-fix.js?v=' + encodeURIComponent(PLACEMENT_FIX_VERSION);
+      priority.async = false;
+      priority.dataset.legatoPlacementPriority = PLACEMENT_FIX_VERSION;
+      priority.onerror = () => console.error('[Legato placement] failed to load cursor-priority targeting');
+      document.head.appendChild(priority);
+    };
     document.head.appendChild(script);
   }
 
