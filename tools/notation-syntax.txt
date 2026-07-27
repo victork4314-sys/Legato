@@ -1,9 +1,0 @@
-/tmp/legato-notation-objects.js:3689
-          else if (sp.type === 'gliss' || sp.type === 'portamento') { const y1 = st1.top + 48 - (sp.step1 || 6) * 6, y2 = st2.top + 48 - (sp.step2 || 6) * 6, dy = y2 - y1; top = Math.min(y1, y2) - 6; h = Math.abs(dy) + 16; const angle = Math.atan2(dy, width) * 180 / Math.PI; label = sp.type === 'gliss' ? 'gliss.' : 'port.'; line1 = base + 'top:' + (y1 - top) + 'px;width:' + width + 'px;border-top:1.5px solid  + accent2 + ';transform:rotate(' + angle + 'deg);'; }
-                                                                                                                                                                                                                                                                                                                                                                                                                                                            ^^^^^^^^^^^^^
-
-SyntaxError: missing ) after argument list
-    at wrapSafe (node:internal/modules/cjs/loader:1713:18)
-    at checkSyntax (node:internal/main/check_syntax:78:3)
-
-Node.js v22.23.1
