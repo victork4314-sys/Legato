@@ -1,0 +1,4 @@
+  File "/home/runner/work/Legato/Legato/tools/apply_semantic_playback_corrections_v5.py", line 25
+    electronic pause timing')
+                           ^
+SyntaxError: unterminated string literal (detected at line 25)
