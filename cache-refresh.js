@@ -1,17 +1,26 @@
 "use strict";
 (() => {
   const CHECK_EVERY_MS = 30000;
-  const PLACEMENT_FIX_VERSION = "20260728-catalog-audit-4";
+  const FALLBACK_BUILD = "20260728-catalog-audit-5";
+  const currentScript = document.currentScript;
+  let LOADER_BUILD = FALLBACK_BUILD;
+  try {
+    if (currentScript && currentScript.src) LOADER_BUILD = new URL(currentScript.src, location.href).searchParams.get('v') || FALLBACK_BUILD;
+  } catch (_) {}
 
-  function loadScript(src, marker, onload) {
-    if (document.querySelector('script[' + marker + '="' + PLACEMENT_FIX_VERSION + '"]')) {
+  if (window.__legatoLoaderBuild === LOADER_BUILD) return;
+  window.__legatoLoaderBuild = LOADER_BUILD;
+
+  function loadScript(src, marker, onload, build) {
+    const version = build || LOADER_BUILD;
+    if (document.querySelector('script[' + marker + '="' + version + '"]')) {
       if (onload) onload();
       return;
     }
     const script = document.createElement('script');
-    script.src = src + '?v=' + encodeURIComponent(PLACEMENT_FIX_VERSION);
+    script.src = src + '?v=' + encodeURIComponent(version);
     script.async = false;
-    script.setAttribute(marker, PLACEMENT_FIX_VERSION);
+    script.setAttribute(marker, version);
     script.onerror = () => console.error('[Legato placement] failed to load ' + src);
     if (onload) script.onload = onload;
     document.head.appendChild(script);
@@ -31,13 +40,23 @@
     });
   }
 
-  function currentBuild() {
-    const meta = document.querySelector('meta[name="legato-build"]');
-    if (meta && meta.content) return meta.content;
-    const runtime = document.querySelector('script[src*="support.js"]');
-    if (!runtime) return '';
-    try { return new URL(runtime.src, location.href).searchParams.get('v') || ''; }
-    catch (_) { return ''; }
+  function loadNewLoader(version) {
+    if (!version || version === window.__legatoLoaderBuild) return false;
+    loadScript('./cache-refresh.js', 'data-legato-build-loader', null, version);
+    return true;
+  }
+
+  async function manifestBuild() {
+    const probe = new URL('legato-build.json', location.href);
+    probe.searchParams.set('_legato_build_check', String(Date.now()));
+    const response = await fetch(probe.href, {
+      cache: 'no-store',
+      credentials: 'same-origin',
+      headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+    });
+    if (!response.ok) return '';
+    const manifest = await response.json();
+    return String(manifest && manifest.version || '');
   }
 
   function buildFromHtml(html) {
@@ -47,23 +66,22 @@
     return runtime ? runtime[1] : '';
   }
 
+  async function legacyIndexBuild() {
+    const probe = new URL('index.html', location.href);
+    probe.searchParams.set('_legato_refresh_check', String(Date.now()));
+    const response = await fetch(probe.href, {
+      cache: 'no-store',
+      credentials: 'same-origin',
+      headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+    });
+    return response.ok ? buildFromHtml(await response.text()) : '';
+  }
+
   async function checkForNewBuild() {
-    if (document.hidden || !navigator.onLine) return;
+    if (document.hidden || !navigator.onLine || window.__legatoLoaderBuild !== LOADER_BUILD) return;
     try {
-      const probe = new URL('index.html', location.href);
-      probe.searchParams.set('_legato_refresh_check', String(Date.now()));
-      const response = await fetch(probe.href, {
-        cache: 'no-store',
-        credentials: 'same-origin',
-        headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
-      });
-      if (!response.ok) return;
-      const nextBuild = buildFromHtml(await response.text());
-      const activeBuild = currentBuild();
-      if (!nextBuild || !activeBuild || nextBuild === activeBuild) return;
-      const target = new URL(location.href);
-      target.searchParams.set('legato-build', nextBuild);
-      location.replace(target.href);
+      const nextBuild = await manifestBuild() || await legacyIndexBuild();
+      loadNewLoader(nextBuild);
     } catch (_) {
       // Being offline or temporarily unable to reach the deployment must never interrupt editing.
     }
@@ -75,6 +93,6 @@
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) checkForNewBuild();
   });
-  setTimeout(checkForNewBuild, 4000);
+  setTimeout(checkForNewBuild, 1200);
   setInterval(checkForNewBuild, CHECK_EVERY_MS);
 })();
