@@ -1,9 +1,7 @@
 name: Global item selection check
 
 on:
-  push:
-    branches:
-      - fix/global-item-selection
+  pull_request:
     paths:
       - .global-item-selection-trigger
 
@@ -12,11 +10,12 @@ permissions:
 
 jobs:
   patch-and-test:
+    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: fix/global-item-selection
+          ref: ${{ github.head_ref }}
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
@@ -58,7 +57,7 @@ jobs:
             await page.addInitScript(() => localStorage.setItem('legato.tour.v1', '1'));
             await page.goto('http://127.0.0.1:4173/index.html', { waitUntil: 'domcontentloaded' });
             await page.waitForFunction(() => !!window.__legatoOwner, null, { timeout: 30000 });
-            const result = await page.evaluate(async () => {
+            const result = await page.evaluate(() => {
               const o = window.__legatoOwner;
               const targets = o.autoScanTargets().filter(t => t.zone !== 3);
               const misses = [];
@@ -76,8 +75,7 @@ jobs:
               }
               o.state.zone = 3;
               o.syncGlobalSelection();
-              const scoreSelected = document.querySelectorAll('[data-scan-selected="true"]').length;
-              return { count:targets.length, misses, scoreSelected };
+              return { count:targets.length, misses, scoreSelected:document.querySelectorAll('[data-scan-selected="true"]').length };
             });
             assert(result.count > 40, 'too few targets: ' + result.count);
             assert(result.misses.length === 0, 'unhighlighted targets: ' + JSON.stringify(result.misses.slice(0,5)));
@@ -92,4 +90,4 @@ jobs:
           git config user.email "actions@users.noreply.github.com"
           git add index.html
           git commit -m "Use one global item selection highlight"
-          git push origin HEAD:fix/global-item-selection
+          git push origin HEAD:${{ github.head_ref }}
