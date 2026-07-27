@@ -40,7 +40,7 @@ jobs:
           npx playwright install --with-deps chromium >/dev/null 2>&1
       - name: Test normal console focus and complete right sidebar
         run: |
-          cat > /tmp/test.js <<'JS'
+          cat > console-focus-test.js <<'JS'
           const { chromium } = require('playwright');
           const fs = require('fs');
           (async()=>{
@@ -81,7 +81,7 @@ jobs:
           })().catch(e=>{console.error(e.stack||e);process.exit(1)});
           JS
           set +e
-          node /tmp/test.js > console-focus-test.log 2>&1
+          node console-focus-test.js > console-focus-test.log 2>&1
           status=$?
           echo "$status" > console-focus-test.status
           cat console-focus-test.log
