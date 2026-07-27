@@ -1,6 +1,6 @@
 "use strict";
 (() => {
-  const VERSION = "20260728-semantic-audio-drag-2";
+  const VERSION = "20260728-semantic-audio-drag-3";
   const HOLD_MS = 360;
   const canon = (m, n) => {
     const t = [m && m.id, m && m.label, n].filter(Boolean).join(" ").toLowerCase();
@@ -70,7 +70,7 @@
     const p = ent && ent.Logic && ent.Logic.prototype;
     if (!p) return false;
     if (p.__semanticAudioDrag === VERSION) return true;
-    const baseApply = p.applyCatalogCommand, baseAnchor = p.scoreAnchor, baseRender = p.renderVals, baseMove = p.moveScoreObject, baseDispatch = p.dispatch, baseStart = p.startPlayback, baseSchedule = p.schedule;
+    const baseApply = p.applyCatalogCommand, baseAnchor = p.scoreAnchor, baseRender = p.renderVals, baseMove = p.moveScoreObject, baseDispatch = p.dispatch, baseOnKey = p.onKey, baseStart = p.startPlayback, baseSchedule = p.schedule;
     p.scoreAnchor = function(){ return this.__semanticAnchor || baseAnchor.call(this); };
     p.applyCatalogCommand = function(meta,name,glyph){
       meta = enrich(meta,name,glyph);
@@ -97,6 +97,10 @@
       const id=this.state.scoreObjectId;
       if(id&&ds&&Math.abs(dp)<.00001){this.setState(s=>({scoreEvents:(s.scoreEvents||[]).map(x=>x.id===id?Object.assign({},x,{offsetY:(x.offsetY||0)+ds*6}):x),scoreSpans:(s.scoreSpans||[]).map(x=>x.id===id?Object.assign({},x,{offsetY:(x.offsetY||0)+ds*6}):x),spoken:((this.scoreObjectById(id,s)||{}).name||"Notation")+" moved"}));return true;}
       return baseMove.call(this,dp,ds);
+    };
+    p.onKey = function(e){
+      if(this.state.halo && (e.key==="a" || e.key==="Enter")) return this.haloApply();
+      return baseOnKey.call(this,e);
     };
     p.dispatch = function(action,phase){
       if(this.__heldCatalog && action==="confirm"&&phase==="press"){const e=this.__heldCatalog;this.__heldCatalog=null;applyAt(this,e,{s:this.state.staff,p:this.state.pos,step:this.state.step});return;}
