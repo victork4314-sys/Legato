@@ -1,9 +1,9 @@
-name: Diagnose metadata-resolved SMuFL semantic audit
+name: Diagnose actual electronic SMuFL metadata
 on:
   pull_request:
     branches: [main]
     paths:
-      - tools/audit_corrected_catalog_v3.py
+      - tools/list_corrected_electronic.py
       - tools/correct_smufl_semantics_v4.py
       - .github/workflows/diagnose-smufl-semantic-audit.yml
 permissions:
@@ -17,17 +17,12 @@ jobs:
           ref: fix/smufl-semantic-audit-corrections
       - name: Apply expanded catalog correction
         run: python3 tools/correct_smufl_semantics_v4.py
-      - name: Run metadata-resolved named audit and capture result
+      - name: Record actual electronic metadata
         run: |
-          set +e
-          python3 tools/audit_corrected_catalog_v3.py > tools/corrected-catalog-audit-v3.txt 2>&1
-          CODE=$?
-          cat tools/corrected-catalog-audit-v3.txt
-          if [ "$CODE" -ne 0 ]; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add tools/corrected-catalog-audit-v3.txt
-            git commit -m "Capture metadata-resolved catalog audit failure" || true
-            git push origin HEAD:fix/smufl-semantic-audit-corrections
-          fi
-          exit "$CODE"
+          python3 tools/list_corrected_electronic.py > tools/corrected-electronic-metadata.txt
+          cat tools/corrected-electronic-metadata.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tools/corrected-electronic-metadata.txt
+          git commit -m "Record actual electronic SMuFL metadata" || true
+          git push origin HEAD:fix/smufl-semantic-audit-corrections
