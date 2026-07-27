@@ -1,2 +1,2 @@
 This temporary marker triggers the draft pull-request validation for the guarded meter, theme, print, cache and scrolling repair.
-Retry: capture the exact guarded mismatch before changing the app.
+Retry: use the narrowed Setup-only controller theme patch.
