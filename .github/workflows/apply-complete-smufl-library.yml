@@ -8,6 +8,7 @@ on:
       - smufl-catalog.js
       - tools/generate_smufl_catalog.py
       - tools/generate_smufl_catalog_v2.py
+      - tools/generate_smufl_catalog_v3.py
       - tools/apply_complete_library.py
       - tools/apply_complete_library_v2.py
       - tools/apply_complete_library_v3.py
@@ -28,7 +29,7 @@ jobs:
 
       - name: Generate complete official catalog
         run: |
-          python3 tools/generate_smufl_catalog_v2.py
+          python3 tools/generate_smufl_catalog_v3.py
           python3 - <<'PY'
           from pathlib import Path
           import json
