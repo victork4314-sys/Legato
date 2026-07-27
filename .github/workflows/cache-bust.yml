@@ -1,0 +1,33 @@
+name: Cache bust current release
+on:
+  push:
+    branches: [main]
+    paths: [.cache-bust-trigger]
+permissions:
+  contents: write
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bump deployed asset version
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          old = '<script src="./support.js"></script>'
+          new = '<script src="./support.js?v=20260727-c9e21a8"></script>'
+          if s.count(old) != 1:
+              raise SystemExit(f'expected one unversioned support script, found {s.count(old)}')
+          p.write_text(s.replace(old, new, 1), encoding='utf-8')
+          PY
+          git diff --check
+          grep -q 'support.js?v=20260727-c9e21a8' index.html
+      - name: Commit cache refresh
+        run: |
+          git config user.name "Legato maintenance"
+          git config user.email "actions@users.noreply.github.com"
+          git add index.html
+          git commit -m "Bust cache for selection highlight release"
+          git push
