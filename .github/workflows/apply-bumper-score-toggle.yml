@@ -55,6 +55,18 @@ jobs:
           npm init -y >/dev/null 2>&1
           npm install playwright@1.55.0
           npx playwright install --with-deps chromium
+      - name: Keep first-run tour out of interaction test
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('tools/test-bumper-score-toggle.mjs')
+          t = p.read_text(encoding='utf-8')
+          needle = "assert.equal(await page.evaluate(() => window.__legatoOwner.state.scoreHint), false, 'entry hint should fade');"
+          replacement = needle + "\nawait page.evaluate(() => window.__legatoOwner.setState({ tour: false }));\nawait page.waitForTimeout(80);"
+          if needle not in t:
+              raise SystemExit('Could not find score hint assertion in browser test')
+          p.write_text(t.replace(needle, replacement, 1), encoding='utf-8')
+          PY
       - name: Run live bumper interaction checks
         id: browser
         continue-on-error: true
