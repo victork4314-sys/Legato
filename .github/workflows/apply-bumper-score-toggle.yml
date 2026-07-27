@@ -55,17 +55,25 @@ jobs:
           npm init -y >/dev/null 2>&1
           npm install playwright@1.55.0
           npx playwright install --with-deps chromium
-      - name: Keep first-run tour out of interaction test
+      - name: Prepare isolated browser interaction test
         run: |
           python3 - <<'PY'
           from pathlib import Path
           p = Path('tools/test-bumper-score-toggle.mjs')
           t = p.read_text(encoding='utf-8')
-          needle = "assert.equal(await page.evaluate(() => window.__legatoOwner.state.scoreHint), false, 'entry hint should fade');"
-          replacement = needle + "\nawait page.evaluate(() => window.__legatoOwner.setState({ tour: false }));\nawait page.waitForTimeout(80);"
-          if needle not in t:
+          fade = "assert.equal(await page.evaluate(() => window.__legatoOwner.state.scoreHint), false, 'entry hint should fade');"
+          fade_replacement = fade + "\nawait page.evaluate(() => window.__legatoOwner.setState({ tour: false }));\nawait page.waitForTimeout(80);"
+          if fade not in t:
               raise SystemExit('Could not find score hint assertion in browser test')
-          p.write_text(t.replace(needle, replacement, 1), encoding='utf-8')
+          t = t.replace(fade, fade_replacement, 1)
+          first_combo = "await combo();\nassert.equal(await page.evaluate(() => window.__legatoOwner.state.zone), 3, 'LB+RB should enter the score');"
+          first_replacement = "const expectedReturnZone = await page.evaluate(() => {\n  const owner = window.__legatoOwner;\n  const selected = document.querySelector('[data-scan-selected=\\\"true\\\"]');\n  return selected ? owner.scanZoneForElement(selected) : owner.state.zone;\n});\n" + first_combo
+          if first_combo not in t:
+              raise SystemExit('Could not find first combo assertion')
+          t = t.replace(first_combo, first_replacement, 1)
+          t = t.replace("assert.equal(await page.evaluate(() => window.__legatoOwner.state.zone), 2, 'second LB+RB should leave the score');", "assert.equal(await page.evaluate(() => window.__legatoOwner.state.zone), expectedReturnZone, 'second LB+RB should leave to the prior interface focus');", 1)
+          t = t.replace("assert.equal(await page.evaluate(() => window.__legatoOwner.state.zone), 2, 'LB+RB should return to the prior interface zone');", "assert.equal(await page.evaluate(() => window.__legatoOwner.state.zone), expectedReturnZone, 'LB+RB should return to the prior interface zone');", 1)
+          p.write_text(t, encoding='utf-8')
           PY
       - name: Run live bumper interaction checks
         id: browser
