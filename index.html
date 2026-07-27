@@ -1629,7 +1629,7 @@ class Component extends DCLogic {
     const old = editing ? this.scoreObjectById(editing) : null;
     const start = old ? { s: old.s1, p: old.p1, step: old.step1 } : anchor;
     this.rumble('soft');
-    this.setState({ spanDraft: { object: 'span', id: editing || this.scoreId('s'), editing: editing || null, type: type, name: name, glyph: glyph || '', s1: start.s, p1: start.p, step1: start.step, system: type === 'ending' || type.indexOf('tempo-') === 0 }, scoreObjectId: null, halo: false, panel: null, selId: null,
+    this.setState({ spanDraft: { object: 'span', id: editing || this.scoreId('s'), editing: editing || null, type: type, name: name, glyph: glyph || '', s1: start.s, p1: start.p, step1: start.step, system: type === 'ending' || type.indexOf('tempo-') === 0 }, scoreObjectId: null, halo: false, panel: null, menu: false, hub: false, kb: null, radial: false, picker: false, remapFor: null, captureFor: null, recovery: null, selId: null,
       staff: start.s, pos: start.p, step: start.step, spoken: name + ' point one set — move to point two and press A' });
   }
   finishScoreSpan(anchor) {
@@ -2016,6 +2016,16 @@ class Component extends DCLogic {
     const s = this.state;
     if (action === 'project-menu' && phase === 'press' && !s.hub && !s.panel && !s.tour) return this.openHub();
     if (phase === 'release') { if (action === 'select-modifier') this._mod = false; return; }
+    if (s.spanDraft && action === 'confirm') return this.finishScoreSpan();
+    if (s.tieFrom && action === 'confirm') {
+      const target = this.selected();
+      if (target && target.id !== s.tieFrom) return this.finishTie(target);
+      return this.setState({ spoken: 'Tie point two is waiting for A — move to the immediately following note of the same pitch' });
+    }
+    if (s.scoreObjectId && action === 'confirm') return this.editSelectedScoreObject();
+    if (s.tieFrom && action === 'delete') return this.setState({ tieFrom: null, spoken: 'Tie cancelled' });
+    if (s.spanDraft && action === 'delete') return this.cancelScoreSpan();
+    if (s.scoreObjectId && action === 'delete') return this.deleteScoreObject();
     if (s.tour) {
       if (action === 'confirm' || action === 'move-right' || action === 'next-zone') return this.tourStep(1);
       if (action === 'move-left' || action === 'previous-zone') return this.tourStep(-1);
@@ -2145,14 +2155,6 @@ class Component extends DCLogic {
       case 'move-right': if (s.scoreObjectId) { this.moveScoreObject(this.gridBeats(), 0); break; } P ? this.movePointer(22, 0) : this.movePos(1); break;
       case 'confirm':
         if (P) { this.clickPointer(); break; }
-        if (s.spanDraft) { this.finishScoreSpan(); break; }
-        if (s.scoreObjectId) { this.editSelectedScoreObject(); break; }
-        if (s.tieFrom) {
-          const target = this.selected();
-          if (target && target.id !== s.tieFrom) this.finishTie(target);
-          else this.setState({ spoken: 'Tie point two is waiting for A — move to the immediately following note of the same pitch' });
-          break;
-        }
         this.enterNote(); break;
       case 'delete': {
         if (!s.range && this.selected()) { this.removeChordNote(); break; }
