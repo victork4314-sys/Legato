@@ -18,7 +18,7 @@ jobs:
         with:
           node-version: 24
       - name: Apply guarded patch
-        run: python .github/scripts/patch_real_dom_scan.py
+        run: python .github/scripts/run_real_dom_scan_patch.py
       - name: Verify source and syntax
         run: |
           git diff --check
