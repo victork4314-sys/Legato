@@ -39,6 +39,9 @@ jobs:
             git push origin HEAD:fix/beam-meter-print-themes-scroll
           fi
           exit 1
+      - name: Restore temporary guard rewrite
+        if: steps.apply.outcome == 'success'
+        run: git checkout -- tools/apply_meter_theme_scroll_repairs.py
       - name: Validate changed file
         if: steps.apply.outcome == 'success'
         run: |
