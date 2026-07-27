@@ -1,0 +1,95 @@
+name: Global item selection check
+
+on:
+  push:
+    branches:
+      - fix/global-item-selection
+    paths:
+      - .global-item-selection-trigger
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/global-item-selection
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Apply guarded patch
+        run: python .github/scripts/patch_global_selection.py
+      - name: Verify exact scope and syntax
+        run: |
+          git diff --check
+          git diff --name-only | grep -qx 'index.html'
+          grep -q 'data-scan-selected' index.html
+          ! grep -q 'box-shadow:inset 0 0 0 2px #74a12e' index.html
+          python - <<'PY'
+          import re
+          from pathlib import Path
+          text = Path('index.html').read_text(encoding='utf-8')
+          matches = re.findall(r'<script\b[^>]*\bdata-dc-script\b[^>]*>(.*?)</script>', text, re.S)
+          if len(matches) != 1: raise SystemExit('script block mismatch')
+          Path('/tmp/legato.js').write_text(matches[0], encoding='utf-8')
+          PY
+          node --check /tmp/legato.js
+      - name: Install browser runtime
+        run: |
+          npm install --no-save playwright@1.54.1
+          npx playwright install --with-deps chromium
+      - name: Test global item highlight
+        run: |
+          python -m http.server 4173 >/tmp/legato-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID || true' EXIT
+          node - <<'JS'
+          const { chromium } = require('playwright');
+          const assert = (v, m) => { if (!v) throw new Error(m); };
+          (async () => {
+            const browser = await chromium.launch({ headless: true });
+            const page = await browser.newPage({ viewport: { width: 1600, height: 1000 } });
+            const errors = [];
+            page.on('pageerror', e => errors.push(String(e)));
+            await page.addInitScript(() => localStorage.setItem('legato.tour.v1', '1'));
+            await page.goto('http://127.0.0.1:4173/index.html', { waitUntil: 'domcontentloaded' });
+            await page.waitForFunction(() => !!window.__legatoOwner, null, { timeout: 30000 });
+            const result = await page.evaluate(async () => {
+              const o = window.__legatoOwner;
+              const targets = o.autoScanTargets().filter(t => t.zone !== 3);
+              const misses = [];
+              for (const t of targets) {
+                o.state.zone = t.zone;
+                o.state.mode = t.mode;
+                o.state.focus = t.focus;
+                o.syncGlobalSelection();
+                const picked = Array.from(document.querySelectorAll('[data-scan-selected="true"]'));
+                if (picked.length !== 1) misses.push({ target:t, count:picked.length });
+                else {
+                  const style = getComputedStyle(picked[0]);
+                  if (style.outlineStyle === 'none' || style.outlineWidth === '0px') misses.push({ target:t, noOutline:true });
+                }
+              }
+              o.state.zone = 3;
+              o.syncGlobalSelection();
+              const scoreSelected = document.querySelectorAll('[data-scan-selected="true"]').length;
+              return { count:targets.length, misses, scoreSelected };
+            });
+            assert(result.count > 40, 'too few targets: ' + result.count);
+            assert(result.misses.length === 0, 'unhighlighted targets: ' + JSON.stringify(result.misses.slice(0,5)));
+            assert(result.scoreSelected === 0, 'score received global selection');
+            assert(errors.length === 0, 'page errors: ' + errors.join(' | '));
+            await browser.close();
+          })().catch(e => { console.error(e); process.exit(1); });
+          JS
+      - name: Commit verified patch
+        run: |
+          git config user.name "Legato maintenance"
+          git config user.email "actions@users.noreply.github.com"
+          git add index.html
+          git commit -m "Use one global item selection highlight"
+          git push origin HEAD:fix/global-item-selection
