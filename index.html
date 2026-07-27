@@ -6,9 +6,9 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="legato-build" content="20260727-real-cache-refresh-1">
-<script src="./cache-refresh.js?v=20260727-real-cache-refresh-1"></script>
-<script src="./support.js?v=20260727-real-cache-refresh-1"></script>
+<meta name="legato-build" content="20260727-score-entry-time-1">
+<script src="./cache-refresh.js?v=20260727-score-entry-time-1"></script>
+<script src="./support.js?v=20260727-score-entry-time-1"></script>
 </head>
 <body>
 <x-dc>
@@ -48,6 +48,21 @@
   @keyframes ringIn { from { opacity: 0; transform: scale(.96) } to { opacity: 1; transform: scale(1) } }
   [data-score-edit="true"] { border-radius: 4px; transition: background .1s ease, box-shadow .1s ease; }
   [data-score-edit="true"]:hover { background: rgba(var(--accent-rgb),.12); box-shadow: 0 0 0 1px rgba(var(--accent-rgb),.34); }
+  [data-score-editor-shell="true"] { position: relative; transition: box-shadow .12s ease, outline-color .12s ease; }
+  [data-score-editor-shell="true"][data-score-active="true"] {
+    box-shadow: inset 0 0 0 3px var(--accent), inset 0 0 0 6px rgba(var(--accent-rgb),.18);
+  }
+  [data-score-editor-shell="true"][data-scan-selected="true"] {
+    outline: 3px solid var(--accent) !important;
+    outline-offset: -5px !important;
+    box-shadow: inset 0 0 0 6px rgba(var(--accent-rgb),.2) !important;
+  }
+  [data-score-editor-shell="true"][data-scan-selected="true"]::after {
+    content: 'SCORE EDITOR SELECTED · PRESS A';
+    position: absolute; left: 14px; top: 10px; z-index: 60; pointer-events: none;
+    padding: 7px 10px; border-radius: 5px; background: var(--accent); color: var(--bg);
+    font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: .05em;
+  }
 </style>
 </helmet>
 <div data-legato-root="true" style="{{ rootStyle }}">
@@ -77,6 +92,10 @@
       </div>
       <div onClick="{{ toggleAutoScanBtn }}" data-ptr="{{ autoScanPtrLabel }}" style="{{ autoScanToggleStyle }}" style-hover="border-color:var(--accent)">
         <div style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text-2); letter-spacing: .05em;">{{ autoScanLabel }}</div>
+      </div>
+      <div onClick="{{ returnToScore }}" data-ptr="{{ returnToScorePtr }}" data-score-return="true" style="{{ returnToScoreStyle }}" style-hover="filter:brightness(1.08)">
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: .06em;">SCORE</div>
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 8px; letter-spacing: .04em; opacity: .78;">{{ returnToScoreHint }}</div>
       </div>
       <div onClick="{{ openHubBtn }}" data-ptr="Open the menu" style="{{ modeBadgeStyle }}">
         <div style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text); letter-spacing: .06em;">{{ modeBadge }}</div>
@@ -240,7 +259,8 @@
         </div>
       </div>
 
-      <div data-scroll="score" data-ptr="Score editor" data-score-editor-shell="true" onClick="{{ enterScoreEditor }}" style="flex: 1; min-height: 0; overflow: auto; padding: 12px 0 18px; background: radial-gradient(1200px 500px at 50% -5%, var(--raised), var(--bg) 70%);">
+      <div data-scroll="score" data-ptr="Score editor" data-score-editor-shell="true" data-score-active="{{ scoreEditorActive }}" onClick="{{ enterScoreEditor }}" style="{{ scoreEditorStyle }}">
+        <div aria-hidden="true" style="{{ scoreEditorBadgeStyle }}">SCORE EDITOR ACTIVE · ARROWS MOVE CURSOR</div>
         <div data-print-score="true" style="{{ paperStyle }}">
 
           <div style="display: flex; align-items: baseline; justify-content: space-between; padding: 0 48px 18px;">
@@ -1343,7 +1363,7 @@ class Component extends DCLogic {
   enterScoreEditor() {
     document.querySelectorAll('[data-scan-selected="true"]').forEach(el => el.removeAttribute('data-scan-selected'));
     this.rumble('tick');
-    this.setState({ zone: 3, focus: 0, spoken: 'Score editor — arrows move through the score; use normal zone navigation to leave' });
+    this.setState({ zone: 3, focus: 0, spoken: 'Score editor active — arrows move the cursor; the SCORE control stays lit while you are inside' });
   }
   visibleScanItems() {
     const all = Array.from(document.querySelectorAll('[data-ptr]')).filter(el => {
@@ -3850,6 +3870,13 @@ class Component extends DCLogic {
       autoScanPtrLabel: s.autoScan ? 'Stop auto scan' : 'Start auto scan',
       toggleAutoScanBtn: () => this.toggleAutoScan(),
       autoScanToggleStyle: 'display:flex;align-items:center;gap:7px;padding:5px 10px;border:1px solid ' + (s.autoScan ? accent : 'var(--border-strong)') + ';border-radius:5px;background:' + (s.autoScan ? 'rgba(var(--accent-rgb),.12)' : 'var(--raised)') + ';cursor:pointer;' + this.ring('top', 2),
+      returnToScore: () => this.enterScoreEditor(),
+      returnToScorePtr: s.zone === 3 ? 'Score editor active' : 'Return to score editor — press A',
+      returnToScoreHint: s.zone === 3 ? 'ACTIVE' : 'A ENTER',
+      returnToScoreStyle: 'display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:58px;padding:3px 9px;border-radius:5px;cursor:pointer;line-height:1.05;border:1px solid ' + accent + ';background:' + (s.zone === 3 ? accent : 'rgba(var(--accent-rgb),.14)') + ';color:' + (s.zone === 3 ? 'var(--bg)' : 'var(--text-strong)') + ';box-shadow:' + (s.zone === 3 ? '0 0 0 2px rgba(var(--accent-rgb),.22)' : 'none') + ';',
+      scoreEditorActive: s.zone === 3 ? 'true' : 'false',
+      scoreEditorStyle: 'flex:1;min-height:0;overflow:auto;padding:12px 0 18px;background:radial-gradient(1200px 500px at 50% -5%,var(--raised),var(--bg) 70%);position:relative;',
+      scoreEditorBadgeStyle: s.zone === 3 ? 'position:sticky;top:8px;left:12px;z-index:55;width:max-content;margin:0 0 -27px 12px;padding:6px 9px;border-radius:5px;background:var(--accent);color:var(--bg);font-family:var(--ui-font);font-size:9px;font-weight:700;letter-spacing:.05em;pointer-events:none;' : 'display:none;',
       fileMenuStyle: 'display:flex;align-items:center;gap:7px;padding:4px 10px;border:1px solid var(--border-strong);border-radius:5px;background:var(--raised);cursor:pointer;' + this.ring('top', 4),
       toggleOneHanded: () => this.setState(p => ({ oneHanded: !p.oneHanded, spoken: p.oneHanded ? 'Two-handed profile' : 'One-handed profile — bumpers and triggers now navigate' })),
       oneHandedStyle: 'display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 9px;border-radius:5px;cursor:pointer;border:1px solid ' + (s.oneHanded ? accent : 'var(--border-strong)') + ';background:' + (s.oneHanded ? 'rgba(var(--accent-rgb),.1)' : 'var(--raised)') + ';' + this.ring('onehand', 0),
@@ -3929,7 +3956,7 @@ class Component extends DCLogic {
         const steps = K.type === 'flat' ? FLAT_STEPS : SHARP_STEPS;
         const met = METERS[s.meter].split('/');
         const timeGlyphs = value => String(value).split('').map(d => String.fromCharCode(0xE080 + Number(d))).join('');
-        const timeWidth = Math.max(String(met[0]).length, String(met[1]).length) * 17 + 6;
+        const timeWidth = Math.max(String(met[0]).length, String(met[1]).length) * 21 + 8;
         const octave = (s.clefOctaves || [])[i] || 0;
         const keyX = 52, timeX = 76 + (K.n || 0) * 12;
         const octaveName = octave === 0 ? 'normal' : (Math.abs(octave) === 1 ? '8' : '15') + (octave > 0 ? ' above' : ' below');
@@ -3942,9 +3969,9 @@ class Component extends DCLogic {
           })),
           timeTop: timeGlyphs(met[0]),
           timeBot: timeGlyphs(met[1]),
-          timeTopStyle: 'position:absolute;left:' + timeX + 'px;top:0;width:' + timeWidth + 'px;height:24px;display:flex;align-items:center;justify-content:center;' + BR + 'font-size:32px;line-height:24px;color:var(--ink);white-space:nowrap;cursor:pointer;z-index:5;',
-          timeBotStyle: 'position:absolute;left:' + timeX + 'px;top:24px;width:' + timeWidth + 'px;height:24px;display:flex;align-items:center;justify-content:center;' + BR + 'font-size:32px;line-height:24px;color:var(--ink);white-space:nowrap;cursor:pointer;z-index:5;',
-          timeHitStyle: 'position:absolute;left:' + (timeX - 3) + 'px;top:0;width:' + (timeWidth + 6) + 'px;height:48px;cursor:pointer;z-index:4;',
+          timeTopStyle: 'position:absolute;left:' + timeX + 'px;top:-1px;width:' + timeWidth + 'px;height:25px;display:grid;place-items:center;' + BR + 'font-size:40px;line-height:1;color:var(--ink);white-space:nowrap;cursor:pointer;z-index:5;',
+          timeBotStyle: 'position:absolute;left:' + timeX + 'px;top:23px;width:' + timeWidth + 'px;height:25px;display:grid;place-items:center;' + BR + 'font-size:40px;line-height:1;color:var(--ink);white-space:nowrap;cursor:pointer;z-index:5;',
+          timeHitStyle: 'position:absolute;left:' + (timeX - 4) + 'px;top:-2px;width:' + (timeWidth + 8) + 'px;height:52px;cursor:pointer;z-index:4;',
           keyHitStyle: 'position:absolute;left:' + (keyX - 4) + 'px;top:-6px;width:' + Math.max(18, (K.n || 0) * 12 + 8) + 'px;height:60px;cursor:pointer;z-index:4;',
           octaveText: octave ? (Math.abs(octave) === 1 ? '8' : '15') : '',
           octaveStyle: octave
