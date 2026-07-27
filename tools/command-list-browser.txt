@@ -2,10 +2,14 @@ node:internal/modules/run_main:123
     triggerUncaughtException(
     ^
 
-page.evaluate: ReferenceError: CAT is not defined
-    at eval (eval at evaluate (:291:30), <anonymous>:2:17)
-    at UtilityScript.evaluate (<anonymous>:293:16)
-    at UtilityScript.<anonymous> (<anonymous>:1:44)
-    at /home/runner/work/Legato/Legato/tools/test-command-list-hairpins.mjs:26:36
+AssertionError [ERR_ASSERTION]: the command panel must actually scroll
+    at file:///home/runner/work/Legato/Legato/tools/test-command-list-hairpins.mjs:68:8 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: false,
+  expected: true,
+  operator: '==',
+  diff: 'simple'
+}
 
 Node.js v22.23.1
