@@ -1,7 +1,7 @@
 "use strict";
 (() => {
   const CHECK_EVERY_MS = 30000;
-  const PLACEMENT_FIX_VERSION = "20260728-semantic-audio-drag-1";
+  const PLACEMENT_FIX_VERSION = "20260728-semantic-audio-drag-2";
 
   function loadScript(src, marker, onload) {
     if (document.querySelector('script[' + marker + '="' + PLACEMENT_FIX_VERSION + '"]')) {
