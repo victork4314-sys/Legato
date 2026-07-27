@@ -13,7 +13,7 @@ await page.evaluate(() => {
   o.setState({
     tour: false, recovery: null, zone: 3, staff: 0, pos: 0, step: 6,
     scoreEvents: [], scoreSpans: [], scoreObjectId: null, spanDraft: null,
-    selId: null, panel: null, halo: false
+    selId: null, panel: null, halo: false, hub: false, kb: null, ptrOn: false
   });
 });
 await page.waitForTimeout(180);
@@ -65,7 +65,7 @@ await page.evaluate(() => {
 await page.waitForTimeout(100);
 assert.equal(await page.evaluate(() => window.__legatoOwner.effectiveScoreEvent('dynamic', 0, 2).name), 'mf', 'dynamic should apply from its exact position');
 
-// Editable rehearsal/technique text.
+// Editable rehearsal/technique text. State settles before DONE, matching real controller use.
 await page.evaluate(() => {
   const o = window.__legatoOwner;
   o.setState({ pos: 2.5, staff: 0 }, () => o.placeScoreEvent('technique', 'Playing technique', '', 'pizz.', { system: false, text: 'pizz.' }));
@@ -76,18 +76,28 @@ await page.evaluate(id => window.__legatoOwner.selectScoreObject(id), techniqueI
 await page.evaluate(() => window.__legatoOwner.editSelectedScoreObject());
 await page.waitForTimeout(40);
 assert.equal(await page.evaluate(() => window.__legatoOwner.state.kb), 'scoreText', 'text object should open the score text keyboard field');
-await page.evaluate(() => window.__legatoOwner.setState({ scoreText: 'arco' }, () => window.__legatoOwner.finishScoreObjectText()));
+await page.evaluate(() => window.__legatoOwner.setState({ scoreText: 'arco' }));
+await page.waitForTimeout(40);
+await page.evaluate(() => window.__legatoOwner.finishScoreObjectText());
 await page.waitForTimeout(80);
 assert.equal(await page.evaluate(id => window.__legatoOwner.scoreObjectById(id).text, techniqueId), 'arco', 'edited technique text should save');
+assert.equal(await page.evaluate(() => window.__legatoOwner.state.kb), null, 'saving score text should close the keyboard');
 
-// Point one / point two spans.
+// Point one / point two spans. The cursor settles before the controller A press.
 await page.evaluate(() => {
   const o = window.__legatoOwner;
   o.setState({ pos: 0.5, staff: 0, step: 7 }, () => o.beginScoreSpan('slur', 'Slur', '\uE1FD'));
 });
 await page.waitForTimeout(80);
 assert.ok((await state()).draft, 'slur point one should create a draft');
-await page.evaluate(() => window.__legatoOwner.setState({ pos: 3, staff: 0, step: 10 }, () => window.__legatoOwner.dispatch('confirm', 'press')));
+await page.evaluate(() => window.__legatoOwner.setState({ pos: 3, staff: 0, step: 10 }));
+await page.waitForTimeout(40);
+const beforeConfirm = await page.evaluate(() => {
+  const o = window.__legatoOwner;
+  return { draft: !!o.state.spanDraft, zone: o.state.zone, ptrOn: o.state.ptrOn, kb: o.state.kb, panel: o.state.panel, hub: o.state.hub, halo: o.state.halo };
+});
+assert.deepEqual(beforeConfirm, { draft: true, zone: 3, ptrOn: false, kb: null, panel: null, hub: false, halo: false }, 'controller span confirmation should begin from a clean score-editing state');
+await page.evaluate(() => window.__legatoOwner.dispatch('confirm', 'press'));
 await page.waitForTimeout(100);
 let snap = await state();
 assert.equal(snap.spans.length, 1, 'controller A should finish a saved slur span');
