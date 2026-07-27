@@ -1,0 +1,52 @@
+name: Restore global selection highlight
+on:
+  push:
+    branches: [main]
+    paths: [.restore-selection-trigger]
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Patch real render path and bump cache
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          old = "  renderVals() {\n    const s = this.state;"
+          new = "  renderVals() {\n    requestAnimationFrame(() => this.syncGlobalSelection());\n    const s = this.state;"
+          if s.count(old) != 1:
+              raise SystemExit(f'renderVals anchor mismatch: {s.count(old)}')
+          s = s.replace(old, new, 1)
+          oldv = './support.js?v=20260727-c9e21a8'
+          newv = './support.js?v=20260727-selection-live-2'
+          if s.count(oldv) != 1:
+              raise SystemExit(f'cache version mismatch: {s.count(oldv)}')
+          s = s.replace(oldv, newv, 1)
+          p.write_text(s, encoding='utf-8')
+          PY
+          git diff --check
+          grep -q 'requestAnimationFrame(() => this.syncGlobalSelection());' index.html
+          grep -q 'support.js?v=20260727-selection-live-2' index.html
+          python - <<'PY'
+          import re
+          from pathlib import Path
+          s=Path('index.html').read_text(encoding='utf-8')
+          m=re.findall(r'<script\b[^>]*\bdata-dc-script\b[^>]*>(.*?)</script>',s,re.S)
+          if len(m)!=1: raise SystemExit('script mismatch')
+          Path('/tmp/legato.js').write_text(m[0],encoding='utf-8')
+          PY
+          node --check /tmp/legato.js
+      - name: Commit fix
+        run: |
+          git config user.name "Legato maintenance"
+          git config user.email "actions@users.noreply.github.com"
+          git add index.html
+          git commit -m "Restore live global selection highlights and refresh cache"
+          git push
