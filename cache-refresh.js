@@ -1,7 +1,7 @@
 "use strict";
 (() => {
   const CHECK_EVERY_MS = 30000;
-  const PLACEMENT_FIX_VERSION = "20260728-semantic-audio-drag-3";
+  const PLACEMENT_FIX_VERSION = "20260728-catalog-audit-1";
 
   function loadScript(src, marker, onload) {
     if (document.querySelector('script[' + marker + '="' + PLACEMENT_FIX_VERSION + '"]')) {
@@ -20,7 +20,13 @@
   function loadPlacementFixes() {
     loadScript('./notation-placement-fix.js', 'data-legato-placement-fix', () => {
       loadScript('./notation-placement-priority-fix.js', 'data-legato-placement-priority', () => {
-        loadScript('./notation-semantic-fix.js', 'data-legato-semantic-fix');
+        loadScript('./notation-semantic-fix.js', 'data-legato-semantic-fix', () => {
+          loadScript('./notation-catalog-core.js', 'data-legato-catalog-core', () => {
+            loadScript('./notation-catalog-placement.js', 'data-legato-catalog-placement', () => {
+              loadScript('./notation-catalog-render-audio.js', 'data-legato-catalog-render-audio');
+            });
+          });
+        });
       });
     });
   }
