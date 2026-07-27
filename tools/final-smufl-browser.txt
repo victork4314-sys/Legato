@@ -3,7 +3,7 @@ node:internal/modules/run_main:123
     ^
 
 AssertionError [ERR_ASSERTION]: harmonicHead semantic example must exist
-    at file:///home/runner/work/Legato/Legato/tools/.generated-smufl-semantic-corrections-v4.mjs?v=1785191209520:80:10 {
+    at file:///home/runner/work/Legato/Legato/tools/.generated-smufl-semantic-corrections-v4.mjs?v=1785191303074:80:10 {
   generatedMessage: false,
   code: 'ERR_ASSERTION',
   actual: undefined,
