@@ -59,7 +59,7 @@
         <div style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #e9ece9; letter-spacing: .06em;">{{ modeBadge }}</div>
         <div style="font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: #9aa5a0;">MENU ≡</div>
       </div>
-      <div onClick="{{ openMenu }}" data-ptr="File menu" style="display: flex; align-items: center; gap: 7px; padding: 4px 10px; border: 1px solid #2b3230; border-radius: 5px; background: #121615; cursor: pointer;" style-hover="border-color:#3c4441">
+      <div onClick="{{ openMenu }}" data-ptr="File menu" style="{{ fileMenuStyle }}" style-hover="border-color:#3c4441">
         <div style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #b6bfba; letter-spacing: .06em;">FILE</div>
       </div>
       <div style="display: flex; align-items: center; gap: 7px; padding: 5px 10px; border: 1px solid #2b3230; border-radius: 5px; background: #121615; font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #b6bfba; letter-spacing: .05em;">{{ sampleStatus }}</div>
@@ -3227,8 +3227,13 @@ class Component extends DCLogic {
   focusList() {
     const s = this.state;
     if (s.sidebarsHidden && (s.zone === 1 || s.zone === 4)) return [];
-    if (s.zone === 0) return ['Setup', 'Write', 'Engrave', 'Play', 'Print', 'Controller'].map((n, i) => ({ t: 'mode', i: i, label: n + ' mode' }))
-      .concat([{ t: 'top', i: 0, label: s.sidebarsHidden ? 'Show sidebars' : 'Hide sidebars' }, { t: 'top', i: 1, label: s.autoScan ? 'Stop auto scan' : 'Start auto scan' }]);
+    if (s.zone === 0) return [
+      { t: 'top', i: 0, label: s.ptrOn ? 'Turn pointer off' : 'Turn pointer on' },
+      { t: 'top', i: 1, label: s.sidebarsHidden ? 'Show sidebars' : 'Hide sidebars' },
+      { t: 'top', i: 2, label: s.autoScan ? 'Stop auto scan' : 'Start auto scan' },
+      { t: 'top', i: 3, label: 'Open the menu' },
+      { t: 'top', i: 4, label: 'Open the file menu' }
+    ].concat(['Setup', 'Write', 'Engrave', 'Play', 'Print', 'Controller'].map((n, i) => ({ t: 'mode', i: i, label: n + ' mode' })));
     if (s.zone === 2) return DURS.map((d, i) => ({ t: 'dur', i: i, label: d.name.toLowerCase() + ' note' }))
       .concat(ACCS.map((a, i) => ({ t: 'acc', i: i, label: ['natural', 'flat', 'sharp'][i] })))
       .concat([{ t: 'entry', i: 0, label: (s.entry === 'rest' ? 'Rest' : 'Note') + ' entry' }, { t: 'grid', i: 0, label: 'Cursor step' }])
@@ -3325,7 +3330,13 @@ class Component extends DCLogic {
     else if (it.t === 'mix') this.setState(p => { const mix = p.mix.map((x, j) => j === it.i ? Object.assign({}, x, { mute: !x.mute }) : x); return { mix: mix, staff: it.i, spoken: STAVES[it.i].name + (mix[it.i].mute ? ' muted' : ' unmuted') }; });
     else if (it.t === 'metro') this.setState(p => ({ metronome: !p.metronome, spoken: p.metronome ? 'Metronome off' : 'Metronome on' }));
     else if (it.t === 'count') this.setState(p => ({ countIn: !p.countIn, spoken: p.countIn ? 'Count-in off' : 'Count-in on' }));
-    else if (it.t === 'top') { if (it.i === 0) this.toggleSidebars(); else this.toggleAutoScan(); }
+    else if (it.t === 'top') {
+      if (it.i === 0) this.togglePointer();
+      else if (it.i === 1) this.toggleSidebars();
+      else if (it.i === 2) this.toggleAutoScan();
+      else if (it.i === 3) this.openHub();
+      else if (it.i === 4) this.setState({ menu: true, menuIdx: 0, spoken: 'File menu' });
+    }
     else if (it.t === 'mode') this.setState({ mode: it.i, spoken: ['Setup', 'Write', 'Engrave', 'Play', 'Print', 'Controller'][it.i] + ' mode' });
     else if (it.t === 'dur') this.setDur(it.i);
     else if (it.t === 'acc') this.setAccidental([null, SM.flat, SM.nat, SM.sharp][it.i] === SM.nat ? null : [null, SM.flat, SM.nat, SM.sharp][it.i], ['', 'flat', 'natural', 'sharp'][it.i]);
@@ -3522,11 +3533,12 @@ class Component extends DCLogic {
       sidebarsLabel: s.sidebarsHidden ? 'SHOW SIDEBARS' : 'HIDE SIDEBARS',
       sidebarsPtrLabel: s.sidebarsHidden ? 'Show sidebars' : 'Hide sidebars',
       toggleSidebarsBtn: () => this.toggleSidebars(),
-      sidebarsToggleStyle: 'display:flex;align-items:center;gap:7px;padding:5px 10px;border:1px solid ' + (s.sidebarsHidden ? accent : '#2b3230') + ';border-radius:5px;background:' + (s.sidebarsHidden ? 'rgba(116,161,46,.12)' : '#121615') + ';cursor:pointer;' + this.ring('top', 0),
+      sidebarsToggleStyle: 'display:flex;align-items:center;gap:7px;padding:5px 10px;border:1px solid ' + (s.sidebarsHidden ? accent : '#2b3230') + ';border-radius:5px;background:' + (s.sidebarsHidden ? 'rgba(116,161,46,.12)' : '#121615') + ';cursor:pointer;' + this.ring('top', 1),
       autoScanLabel: s.autoScan ? 'AUTO SCAN ON' : 'AUTO SCAN',
       autoScanPtrLabel: s.autoScan ? 'Stop auto scan' : 'Start auto scan',
       toggleAutoScanBtn: () => this.toggleAutoScan(),
-      autoScanToggleStyle: 'display:flex;align-items:center;gap:7px;padding:5px 10px;border:1px solid ' + (s.autoScan ? accent : '#2b3230') + ';border-radius:5px;background:' + (s.autoScan ? 'rgba(116,161,46,.12)' : '#121615') + ';cursor:pointer;' + this.ring('top', 1),
+      autoScanToggleStyle: 'display:flex;align-items:center;gap:7px;padding:5px 10px;border:1px solid ' + (s.autoScan ? accent : '#2b3230') + ';border-radius:5px;background:' + (s.autoScan ? 'rgba(116,161,46,.12)' : '#121615') + ';cursor:pointer;' + this.ring('top', 2),
+      fileMenuStyle: 'display:flex;align-items:center;gap:7px;padding:4px 10px;border:1px solid #2b3230;border-radius:5px;background:#121615;cursor:pointer;' + this.ring('top', 4),
       toggleOneHanded: () => this.setState(p => ({ oneHanded: !p.oneHanded, spoken: p.oneHanded ? 'Two-handed profile' : 'One-handed profile — bumpers and triggers now navigate' })),
       oneHandedStyle: 'display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 9px;border-radius:5px;cursor:pointer;border:1px solid ' + (s.oneHanded ? accent : '#2b3230') + ';background:' + (s.oneHanded ? 'rgba(116,161,46,.1)' : '#131817') + ';' + this.ring('onehand', 0),
       switchStyle: 'width:30px;height:16px;border-radius:9px;position:relative;background:' + (s.oneHanded ? accent : '#39413e') + ';',
@@ -3821,7 +3833,7 @@ class Component extends DCLogic {
       closeHub: () => this.closeOverlays('Back to editing'),
       backToHub: () => this.setState({ panel: null, spoken: 'Menu' }),
       modeBadge: s.hub || s.panel ? 'MENU' : (s.ptrOn ? 'POINTER' : ['MODES', 'PLAYERS', 'TOOLBAR', 'SCORE', 'PANEL'][s.zone]),
-      modeBadgeStyle: 'display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:5px;border:1px solid ' + (s.hub || s.panel ? '#f0b429' : accent) + ';background:' + (s.hub || s.panel ? 'rgba(240,180,41,.14)' : 'rgba(116,161,46,.12)') + ';cursor:pointer;',
+      modeBadgeStyle: 'display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:5px;border:1px solid ' + (s.hub || s.panel ? '#f0b429' : accent) + ';background:' + (s.hub || s.panel ? 'rgba(240,180,41,.14)' : 'rgba(116,161,46,.12)') + ';cursor:pointer;' + this.ring('top', 3),
       pickerOpen: s.picker,
       pickFamName: GM[s.pickFam][0],
       pickCurrent: gmLabel(s.instruments[s.staff]),
@@ -4409,7 +4421,7 @@ class Component extends DCLogic {
       ],
       ptrOn: s.ptrOn,
       ptrChipLabel: s.ptrOn ? 'POINTER ON · RS' : 'POINTER OFF · RS',
-      ptrChipStyle: 'display:flex;align-items:center;gap:7px;padding:4px 9px;border:1px solid ' + (s.ptrOn ? accent : '#2b3230') + ';border-radius:5px;background:' + (s.ptrOn ? 'rgba(116,161,46,.12)' : '#121615') + ';cursor:pointer;',
+      ptrChipStyle: 'display:flex;align-items:center;gap:7px;padding:4px 9px;border:1px solid ' + (s.ptrOn ? accent : '#2b3230') + ';border-radius:5px;background:' + (s.ptrOn ? 'rgba(116,161,46,.12)' : '#121615') + ';cursor:pointer;' + this.ring('top', 0),
       ptrChipDot: 'width:7px;height:7px;border-radius:50%;background:' + (s.ptrOn ? accent : '#4a524f') + ';',
       togglePointerChip: () => this.togglePointer(),
       ptrTarget: s.ptrTarget || 'nothing under pointer',
