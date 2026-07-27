@@ -1,16 +1,21 @@
-before LB {"zone":3,"selId":"nuf6nsv","accidental":null,"comboLatched":false,"pending4":null,"pending5":null,"previous":[false,false],"spoken":"reset accidental for test"}
-after LB {"zone":3,"selId":"nuf6nsv","accidental":null,"comboLatched":false,"pending4":null,"pending5":null,"previous":[false,false],"spoken":"reset accidental for test"}
+before LB {"zone":3,"selId":"nl9ew58","accidental":null,"comboLatched":false,"pending4":null,"pending5":null,"previous":[false,false],"spoken":"reset accidental for test"}
+after LB {"zone":3,"selId":"nl9ew58","accidental":"","comboLatched":false,"pending4":null,"pending5":null,"previous":[false,false],"spoken":"A5 — flat"}
+before RB {"zone":3,"selId":"nl9ew58","accidental":null,"comboLatched":false,"pending4":null,"pending5":null,"previous":[false,false],"spoken":"reset accidental for test"}
+after RB {"zone":3,"selId":"nl9ew58","accidental":"","comboLatched":false,"pending4":null,"pending5":null,"previous":[false,false],"spoken":"A5 — sharp"}
 node:internal/modules/run_main:123
     triggerUncaughtException(
     ^
 
-AssertionError [ERR_ASSERTION]: LB alone should still apply an accidental
-    at file:///home/runner/work/Legato/Legato/tools/test-bumper-score-toggle.mjs:87:8 {
+AssertionError [ERR_ASSERTION]: second LB+RB should leave the score
+
+1 !== 2
+
+    at file:///home/runner/work/Legato/Legato/tools/test-bumper-score-toggle.mjs:104:8 {
   generatedMessage: false,
   code: 'ERR_ASSERTION',
-  actual: null,
-  expected: true,
-  operator: '==',
+  actual: 1,
+  expected: 2,
+  operator: 'strictEqual',
   diff: 'simple'
 }
 
