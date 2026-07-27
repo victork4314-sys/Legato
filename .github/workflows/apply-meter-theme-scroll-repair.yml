@@ -21,8 +21,26 @@ jobs:
           ref: fix/beam-meter-print-themes-scroll
           fetch-depth: 0
       - name: Apply guarded repair
-        run: python3 tools/apply_meter_theme_scroll_repairs.py
+        id: apply
+        continue-on-error: true
+        run: python3 tools/apply_meter_theme_scroll_repairs.py > /tmp/legato-repair.log 2>&1
+      - name: Show exact repair result
+        if: always()
+        run: cat /tmp/legato-repair.log
+      - name: Save exact mismatch on the safety branch
+        if: steps.apply.outcome == 'failure'
+        run: |
+          cp /tmp/legato-repair.log tools/repair-error.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tools/repair-error.txt
+          if ! git diff --cached --quiet; then
+            git commit -m "Record guarded repair mismatch"
+            git push origin HEAD:fix/beam-meter-print-themes-scroll
+          fi
+          exit 1
       - name: Validate changed file
+        if: steps.apply.outcome == 'success'
         run: |
           git diff --check
           test "$(git diff --name-only | sort)" = "index.html"
@@ -33,7 +51,7 @@ jobs:
           ! grep -q "window.print(), 250" index.html
           ! grep -q "levelUnit = Math.max(.125" index.html
       - name: Commit only the repaired app file
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && steps.apply.outcome == 'success'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
