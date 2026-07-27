@@ -1,7 +1,7 @@
 "use strict";
 (() => {
   const CHECK_EVERY_MS = 30000;
-  const PLACEMENT_FIX_VERSION = "20260728-catalog-theory-audio-1";
+  const PLACEMENT_FIX_VERSION = "20260728-catalog-theory-audio-2";
 
   function loadScript(src, marker, onload) {
     if (document.querySelector('script[' + marker + '="' + PLACEMENT_FIX_VERSION + '"]')) {
@@ -21,7 +21,9 @@
     loadScript('./notation-placement-fix.js', 'data-legato-placement-fix', () => {
       loadScript('./notation-placement-priority-fix.js', 'data-legato-placement-priority', () => {
         loadScript('./notation-semantic-fix.js', 'data-legato-semantic-fix', () => {
-          loadScript('./notation-catalog-audit-fix.js', 'data-legato-catalog-audit');
+          loadScript('./notation-catalog-routing-fix.js', 'data-legato-catalog-routing', () => {
+            loadScript('./notation-engraving-audio-keyboard-fix.js', 'data-legato-engraving-audio-keyboard');
+          });
         });
       });
     });
