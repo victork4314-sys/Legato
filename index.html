@@ -6,14 +6,14 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<script src="./support.js?v=20260727-meter-themes-scroll-2"></script>
+<script src="./support.js?v=20260727-rests-ties-focus-fonts-1"></script>
 </head>
 <body>
 <x-dc>
 <helmet>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Source+Serif+4:wght@500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Noto+Music&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&amp;family=EB+Garamond:wght@500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Serif:wght@500;600&amp;family=Inter:wght@400;500;600;700&amp;family=Libre+Baskerville:wght@400;700&amp;family=Noto+Music&amp;family=Noto+Sans:wght@400;500;600;700&amp;family=Noto+Serif:wght@500;600&amp;family=Source+Sans+3:wght@400;500;600;700&amp;family=Source+Serif+4:wght@500;600&amp;display=swap" rel="stylesheet">
 <style>
   :root {
     --bg:#07100c;--panel:#111b17;--raised:#17241f;--control:#1d2c26;--panel-low:#0d1713;
@@ -21,6 +21,7 @@
     --text:#f5fff9;--text-strong:#ecfff4;--text-2:#d0e9dc;--muted-text:#b3cdbf;--muted:#91ad9e;--muted-2:#718b7e;--muted-3:#587064;
     --accent:#42e69a;--accent-soft:#88f4bf;--accent-rgb:66,230,154;--score-accent:#167b4f;
     --paper:#fffdf7;--ink:#151813;--staff-ink:#20241d;--ink-soft:#3d4439;--paper-muted:#77756d;
+    --ui-font:'Inter',sans-serif;--score-font:'Source Serif 4',serif;
   }
   [data-scroll] { overscroll-behavior: contain; scrollbar-gutter: stable; touch-action: pan-x pan-y; }
   [data-ptr][data-scan-selected="true"] {
@@ -107,7 +108,7 @@
         <div style="font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--muted-3);">ZONE 1</div>
       </div>
       <div data-scroll="players" style="flex: 1; min-height: 132px; overflow: auto; padding: 8px 8px 12px;">
-        <div style="font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600; color: var(--muted-2); letter-spacing: .02em; padding: 6px 6px 4px;">{{ ensembleLabel }}</div>
+        <div style="font-family: var(--ui-font); font-size: 11px; font-weight: 600; color: var(--muted-2); letter-spacing: .02em; padding: 6px 6px 4px;">{{ ensembleLabel }}</div>
         <div style="font-size: 12.5px; font-weight: 600; color: var(--text); padding: 0 6px 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ selectedPlayerLine }}</div>
         <sc-for list="{{ players }}" as="p" hint-placeholder-count="5">
           <div onClick="{{ p.onSelect }}" data-ptr="{{ p.ptrLabel }}" style="{{ p.style }}" style-hover="background:var(--hover)">
@@ -121,7 +122,7 @@
         </sc-for>
 
         <div style="height: 1px; background: var(--border); margin: 14px 4px;"></div>
-        <div style="font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600; color: var(--muted-2); letter-spacing: .02em; padding: 2px 6px 8px;">Flows</div>
+        <div style="font-family: var(--ui-font); font-size: 11px; font-weight: 600; color: var(--muted-2); letter-spacing: .02em; padding: 2px 6px 8px;">Flows</div>
         <div style="display: flex; flex-direction: column; gap: 3px;">
           <div style="display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 5px; background: var(--hover); border: 1px solid #2e3532;">
             <div style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--accent);">01</div>
@@ -237,14 +238,14 @@
         </div>
       </div>
 
-      <div data-scroll="score" style="flex: 1; min-height: 0; overflow: auto; padding: 12px 0 18px; background: radial-gradient(1200px 500px at 50% -5%, var(--raised), var(--bg) 70%);">
+      <div data-scroll="score" data-ptr="Score editor" data-score-editor-shell="true" onClick="{{ enterScoreEditor }}" style="flex: 1; min-height: 0; overflow: auto; padding: 12px 0 18px; background: radial-gradient(1200px 500px at 50% -5%, var(--raised), var(--bg) 70%);">
         <div data-print-score="true" style="{{ paperStyle }}">
 
           <div style="display: flex; align-items: baseline; justify-content: space-between; padding: 0 48px 18px;">
             <div style="flex: 0 0 auto; white-space: nowrap; font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; color: var(--paper-muted); letter-spacing: .08em;">Flow 01</div>
             <div style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 3px;">
               <div onClick="{{ editTitle }}" data-ptr="Edit score title" data-score-edit="true" style="{{ titleStyle }}">{{ title }}</div>
-              <div style="font-family: 'Inter', sans-serif; font-size: 10px; color: var(--paper-muted); letter-spacing: .025em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">
+              <div style="font-family: var(--ui-font); font-size: 10px; color: var(--paper-muted); letter-spacing: .025em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">
                 <span onClick="{{ editComposer }}" data-ptr="Edit composer" data-score-edit="true" style="cursor: pointer; padding: 1px 3px;">{{ composer }}</span>
                 <span> · </span>
                 <span onClick="{{ editKey }}" data-ptr="Edit key signature" data-score-edit="true" style="cursor: pointer; padding: 1px 3px;">{{ keyName }}</span>
@@ -367,7 +368,7 @@
       <div data-scroll="props" style="flex: 1; overflow: auto; padding: 12px;">
         <sc-if value="{{ modePlay }}" hint-placeholder-val="{{ false }}">
           <div style="border: 1px solid var(--border); border-radius: 6px; background: var(--raised); padding: 10px 11px 12px; margin-bottom: 10px;">
-            <div style="font-family: 'Inter', sans-serif; font-size: 11.5px; font-weight: 600; color: var(--muted); letter-spacing: .02em; padding-bottom: 9px;">Mixer</div>
+            <div style="font-family: var(--ui-font); font-size: 11.5px; font-weight: 600; color: var(--muted); letter-spacing: .02em; padding-bottom: 9px;">Mixer</div>
             <sc-for list="{{ mixRows }}" as="m" hint-placeholder-count="4">
               <div onClick="{{ m.onSelect }}" data-ptr="{{ m.name }} channel" style="{{ m.rowStyle }}">
                 <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 8px;">
@@ -402,7 +403,7 @@
 
         <sc-if value="{{ modeEngrave }}" hint-placeholder-val="{{ false }}">
           <div style="border: 1px solid var(--border); border-radius: 6px; background: var(--raised); padding: 10px 11px 12px; margin-bottom: 10px;">
-            <div style="font-family: 'Inter', sans-serif; font-size: 11.5px; font-weight: 600; color: var(--muted); letter-spacing: .02em; padding-bottom: 9px;">Engraving</div>
+            <div style="font-family: var(--ui-font); font-size: 11.5px; font-weight: 600; color: var(--muted); letter-spacing: .02em; padding-bottom: 9px;">Engraving</div>
             <sc-for list="{{ engraveControls }}" as="c" hint-placeholder-count="4">
               <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 9px; border-radius: 5px; background: var(--control); border: 1px solid var(--border); margin-bottom: 5px; {{ c.ring }}">
                 <div style="font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--muted-3); letter-spacing: .08em;">{{ c.k }}</div>
@@ -418,7 +419,7 @@
 
         <sc-if value="{{ modePrint }}" hint-placeholder-val="{{ false }}">
           <div style="border: 1px solid var(--border); border-radius: 6px; background: var(--raised); padding: 10px 11px 12px; margin-bottom: 10px;">
-            <div style="font-family: 'Inter', sans-serif; font-size: 11.5px; font-weight: 600; color: var(--muted); letter-spacing: .02em; padding-bottom: 9px;">Print &amp; export</div>
+            <div style="font-family: var(--ui-font); font-size: 11.5px; font-weight: 600; color: var(--muted); letter-spacing: .02em; padding-bottom: 9px;">Print &amp; export</div>
             <sc-for list="{{ printControls }}" as="c" hint-placeholder-count="3">
               <div onClick="{{ c.act }}" data-ptr="{{ c.k }}" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 9px; border-radius: 5px; background: var(--control); border: 1px solid var(--border); margin-bottom: 5px; cursor: pointer; {{ c.ring }}">
                 <div style="font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--muted-3); letter-spacing: .08em;">{{ c.k }}</div>
@@ -436,7 +437,7 @@
 
         <sc-if value="{{ modeController }}" hint-placeholder-val="{{ false }}">
           <div style="border: 1px solid var(--border); border-radius: 6px; background: var(--raised); padding: 10px 11px 12px; margin-bottom: 10px;">
-            <div style="font-family: 'Inter', sans-serif; font-size: 11.5px; font-weight: 600; color: var(--muted); letter-spacing: .02em; padding-bottom: 9px;">Buttons</div>
+            <div style="font-family: var(--ui-font); font-size: 11.5px; font-weight: 600; color: var(--muted); letter-spacing: .02em; padding-bottom: 9px;">Buttons</div>
             <div style="display: flex; flex-wrap: wrap; gap: 5px;">
               <sc-for list="{{ legend }}" as="lg" hint-placeholder-count="7">
                 <div style="display: flex; align-items: center; gap: 6px; padding: 4px 9px 4px 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--raised);">
@@ -448,7 +449,7 @@
           </div>
           <div style="border: 1px solid var(--border); border-radius: 6px; background: var(--raised); padding: 10px 11px 12px; margin-bottom: 10px;">
             <div style="display: flex; align-items: baseline; justify-content: space-between; padding-bottom: 9px;">
-              <div style="font-family: 'Inter', sans-serif; font-size: 11.5px; font-weight: 600; color: var(--muted); letter-spacing: .02em;">Bindings</div>
+              <div style="font-family: var(--ui-font); font-size: 11.5px; font-weight: 600; color: var(--muted); letter-spacing: .02em;">Bindings</div>
               <div style="font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--accent);">{{ layerName }}</div>
             </div>
             <sc-for list="{{ bindingRows }}" as="b" hint-placeholder-count="16">
@@ -468,7 +469,7 @@
           </div>
 
           <div style="border: 1px solid var(--border); border-radius: 6px; background: var(--raised); padding: 10px 11px 12px; margin-bottom: 10px;">
-            <div style="font-family: 'Inter', sans-serif; font-size: 11.5px; font-weight: 600; color: var(--muted); letter-spacing: .02em; padding-bottom: 9px;">Calibration</div>
+            <div style="font-family: var(--ui-font); font-size: 11.5px; font-weight: 600; color: var(--muted); letter-spacing: .02em; padding-bottom: 9px;">Calibration</div>
             <div style="font-size: 12px; color: var(--text-2); padding-bottom: 9px;">{{ calibText }}</div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px;">
               <div onClick="{{ startCalib }}" data-ptr="Start calibration" style="padding: 8px 10px; border-radius: 5px; cursor: pointer; text-align: center; border: 1px solid var(--border-strong); color: var(--text-2); font-size: 12px;">Start</div>
@@ -477,7 +478,7 @@
           </div>
 
           <div style="border: 1px solid var(--border); border-radius: 6px; background: var(--raised); padding: 10px 11px 12px; margin-bottom: 10px;">
-            <div style="font-family: 'Inter', sans-serif; font-size: 11.5px; font-weight: 600; color: var(--muted); letter-spacing: .02em; padding-bottom: 9px;">Profiles</div>
+            <div style="font-family: var(--ui-font); font-size: 11.5px; font-weight: 600; color: var(--muted); letter-spacing: .02em; padding-bottom: 9px;">Profiles</div>
             <div style="display: grid; gap: 5px;">
               <div onClick="{{ exportProfile }}" data-ptr="Export controller profile" style="padding: 8px 10px; border-radius: 5px; cursor: pointer; text-align: center; border: 1px solid var(--border-strong); color: var(--text-2); font-size: 12px;">Export profile</div>
               <div onClick="{{ importProfile }}" data-ptr="Import controller profile" style="padding: 8px 10px; border-radius: 5px; cursor: pointer; text-align: center; border: 1px solid var(--border-strong); color: var(--text-2); font-size: 12px;">Import profile…</div>
@@ -487,7 +488,7 @@
 
         <sc-if value="{{ modeSetup }}" hint-placeholder-val="{{ false }}">
           <div style="border: 1px solid var(--border); border-radius: 6px; background: var(--raised); padding: 10px 11px 12px; margin-bottom: 10px;">
-            <div style="font-family: 'Inter', sans-serif; font-size: 11.5px; font-weight: 600; color: var(--muted); letter-spacing: .02em; padding-bottom: 9px;">Project</div>
+            <div style="font-family: var(--ui-font); font-size: 11.5px; font-weight: 600; color: var(--muted); letter-spacing: .02em; padding-bottom: 9px;">Project</div>
             <div style="display: grid; gap: 5px;">
               <div onClick="{{ doNew }}" data-ptr="New score" style="padding: 9px 11px; border-radius: 6px; cursor: pointer; text-align: center; background: var(--accent); color: var(--bg); font-size: 12.5px; font-weight: 600;">New score</div>
               <div onClick="{{ doOpen }}" data-ptr="Open project" style="padding: 9px 11px; border-radius: 6px; cursor: pointer; text-align: center; border: 1px solid var(--border-strong); color: var(--text-2); font-size: 12.5px;">Open .legato…</div>
@@ -495,7 +496,7 @@
             </div>
           </div>
           <div style="border: 1px solid var(--border); border-radius: 6px; background: var(--raised); padding: 10px 11px 12px; margin-bottom: 10px;">
-            <div style="font-family: 'Inter', sans-serif; font-size: 11.5px; font-weight: 600; color: var(--muted); letter-spacing: .02em; padding-bottom: 3px;">Theme</div>
+            <div style="font-family: var(--ui-font); font-size: 11.5px; font-weight: 600; color: var(--muted); letter-spacing: .02em; padding-bottom: 3px;">Theme</div>
             <div style="font-size: 11px; color: var(--muted-2); padding-bottom: 9px;">Complete interface palettes — the score stays clean and readable.</div>
             <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px;">
               <sc-for list="{{ themeRows }}" as="th" hint-placeholder-count="12">
@@ -508,11 +509,23 @@
               </sc-for>
             </div>
           </div>
+          <div style="border: 1px solid var(--border); border-radius: 6px; background: var(--raised); padding: 10px 11px 12px; margin-bottom: 10px;">
+            <div style="font-family: var(--ui-font); font-size: 11.5px; font-weight: 600; color: var(--muted); letter-spacing: .02em; padding-bottom: 3px;">Fonts</div>
+            <div style="font-size: 11px; color: var(--muted-2); padding-bottom: 9px;">Choose the interface and score-heading type together. Music symbols remain Bravura.</div>
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px;">
+              <sc-for list="{{ fontRows }}" as="ft" hint-placeholder-count="6">
+                <div onClick="{{ ft.onSelect }}" data-ptr="Font {{ ft.name }}" style="{{ ft.style }}" style-hover="filter:brightness(1.08)">
+                  <span style="font-size:10px;color:var(--muted);">{{ ft.name }}</span>
+                  <span style="{{ ft.sampleStyle }}">{{ ft.sample }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
         </sc-if>
 
 
         <div style="border: 1px solid var(--border); border-radius: 6px; background: var(--raised); padding: 10px 11px 12px; margin-bottom: 10px;">
-          <div style="font-family: 'Inter', sans-serif; font-size: 11.5px; font-weight: 600; color: var(--muted); letter-spacing: .02em; padding-bottom: 9px;">SCORE SETUP — A EDITS, LEFT/RIGHT CHANGES</div>
+          <div style="font-family: var(--ui-font); font-size: 11.5px; font-weight: 600; color: var(--muted); letter-spacing: .02em; padding-bottom: 9px;">SCORE SETUP — A EDITS, LEFT/RIGHT CHANGES</div>
           <div style="display: grid; gap: 4px;">
             <sc-for list="{{ setupRows }}" as="r" hint-placeholder-count="6">
               <div onClick="{{ r.onSelect }}" data-ptr="{{ r.k }}" style="{{ r.style }}" style-hover="border-color:var(--border-hover)">
@@ -524,7 +537,7 @@
         </div>
         <div style="border: 1px solid var(--border); border-radius: 6px; background: var(--raised); padding: 10px 11px 12px; margin-bottom: 10px;">
           <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 10px;">
-            <div style="font-family: 'Inter', sans-serif; font-size: 11.5px; font-weight: 600; color: var(--muted); letter-spacing: .02em;">Selection</div>
+            <div style="font-family: var(--ui-font); font-size: 11.5px; font-weight: 600; color: var(--muted); letter-spacing: .02em;">Selection</div>
             <div style="font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--accent);">{{ selectionCount }}</div>
           </div>
           <div style="display: flex; align-items: baseline; gap: 8px;">
@@ -544,7 +557,7 @@
 
         <div style="border: 1px solid var(--border); border-radius: 6px; background: var(--raised); padding: 10px 11px 12px; margin-bottom: 10px;">
           <div style="display: flex; align-items: baseline; justify-content: space-between; padding-bottom: 9px;">
-            <div style="font-family: 'Inter', sans-serif; font-size: 11.5px; font-weight: 600; color: var(--muted); letter-spacing: .02em;">CLEF</div>
+            <div style="font-family: var(--ui-font); font-size: 11.5px; font-weight: 600; color: var(--muted); letter-spacing: .02em;">CLEF</div>
             <div style="font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--accent);">{{ staffName }}</div>
           </div>
           <div onClick="{{ openPicker }}" data-ptr="Instrument" style="{{ instrumentRow.style }}" style-hover="border-color:var(--border-hover)">
@@ -561,7 +574,7 @@
           </div>
         </div>
         <div style="border: 1px solid var(--border); border-radius: 6px; background: var(--raised); padding: 10px 11px 12px; margin-bottom: 10px;">
-          <div style="font-family: 'Inter', sans-serif; font-size: 11.5px; font-weight: 600; color: var(--muted); letter-spacing: .02em; padding-bottom: 9px;">ARTICULATION</div>
+          <div style="font-family: var(--ui-font); font-size: 11.5px; font-weight: 600; color: var(--muted); letter-spacing: .02em; padding-bottom: 9px;">ARTICULATION</div>
           <div style="display: flex; flex-wrap: wrap; gap: 5px;">
             <sc-for list="{{ artics }}" as="a" hint-placeholder-count="6">
               <div onClick="{{ a.onSelect }}" data-ptr="{{ a.ptrLabel }}" style="{{ a.style }}" style-hover="border-color:var(--border-hover)">{{ a.name }}</div>
@@ -571,7 +584,7 @@
 
         <div style="border: 1px solid var(--border); border-radius: 6px; background: var(--raised); padding: 10px 11px 12px; margin-bottom: 10px;">
           <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-bottom: 9px;">
-            <div style="font-family: 'Inter', sans-serif; font-size: 11.5px; font-weight: 600; color: var(--muted); letter-spacing: .02em;">ORNAMENTS — THEY PLAY BACK</div>
+            <div style="font-family: var(--ui-font); font-size: 11.5px; font-weight: 600; color: var(--muted); letter-spacing: .02em;">ORNAMENTS — THEY PLAY BACK</div>
             <div onClick="{{ openOrnamentsBtn }}" data-ptr="All ornaments" style="display: flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 6px; cursor: pointer; border: 1px solid var(--border-strong); font-family: 'IBM Plex Mono', monospace; font-size: 8.5px; color: var(--text-2);" style-hover="border-color:var(--accent)">
               <span style="width: 15px; height: 15px; border-radius: 50%; background: #4a9ce8; color: #04101c; font-size: 8.5px; font-weight: 600; display: grid; place-items: center;">X</span>
               <span>ALL 25</span>
@@ -589,7 +602,7 @@
         </div>
 
         <div style="border: 1px solid var(--border); border-radius: 6px; background: var(--raised); padding: 10px 11px 14px; margin-bottom: 10px;">
-          <div style="font-family: 'Inter', sans-serif; font-size: 11.5px; font-weight: 600; color: var(--muted); letter-spacing: .02em; padding-bottom: 12px;">Dynamics &amp; timing</div>
+          <div style="font-family: var(--ui-font); font-size: 11.5px; font-weight: 600; color: var(--muted); letter-spacing: .02em; padding-bottom: 12px;">Dynamics &amp; timing</div>
           <sc-for list="{{ sliders }}" as="s" hint-placeholder-count="3">
             <div style="{{ s.rowStyle }}">
               <div style="display: flex; align-items: baseline; justify-content: space-between; padding-bottom: 6px;">
@@ -605,7 +618,7 @@
         </div>
 
         <div style="border: 1px solid var(--border); border-radius: 6px; background: var(--raised); padding: 10px 11px 12px;">
-          <div style="font-family: 'Inter', sans-serif; font-size: 11.5px; font-weight: 600; color: var(--muted); letter-spacing: .02em; padding-bottom: 9px;">Engraving</div>
+          <div style="font-family: var(--ui-font); font-size: 11.5px; font-weight: 600; color: var(--muted); letter-spacing: .02em; padding-bottom: 9px;">Engraving</div>
           <sc-for list="{{ engraveRows }}" as="e" hint-placeholder-count="4">
             <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #1c2120;">
               <div style="font-size: 12px; color: var(--muted-text);">{{ e.k }}</div>
@@ -621,7 +634,7 @@
     <div style="position: fixed; inset: 0; background: rgba(6,8,7,.76); backdrop-filter: blur(4px); display: grid; place-items: center; z-index: 50;">
       <div style="width: min(1000px, 94vw); max-height: 84vh; display: grid; grid-template-columns: 216px 1fr; border: 1px solid var(--border-strong); border-radius: 6px; background: var(--panel); box-shadow: 0 40px 110px rgba(0,0,0,.7); overflow: hidden; animation: ringIn .1s ease-out;">
         <div data-scroll="halocats" style="border-right: 1px solid var(--border); background: var(--raised); padding: 12px 10px; overflow: auto;">
-          <div style="font-family: 'Inter', sans-serif; font-size: 11.5px; font-weight: 600; color: var(--muted); letter-spacing: .02em; padding: 2px 6px 10px;">Category</div>
+          <div style="font-family: var(--ui-font); font-size: 11.5px; font-weight: 600; color: var(--muted); letter-spacing: .02em; padding: 2px 6px 10px;">Category</div>
           <div style="display: grid; gap: 2px;">
             <sc-for list="{{ haloCats }}" as="c" hint-placeholder-count="11">
               <div onClick="{{ c.onSelect }}" data-ptr="{{ c.name }}" style="{{ c.style }}" style-hover="background:var(--hover)">
@@ -686,7 +699,7 @@
     <div style="position: fixed; inset: 0; background: rgba(6,8,7,.78); backdrop-filter: blur(4px); display: grid; place-items: center; z-index: 56;">
       <div style="width: min(880px, 94vw); max-height: 82vh; display: grid; grid-template-columns: 186px 1fr; border: 1px solid var(--border-strong); border-radius: 6px; background: var(--panel); box-shadow: 0 40px 110px rgba(0,0,0,.7); overflow: hidden; animation: ringIn .1s ease-out;">
         <div data-scroll="pickfams" style="border-right: 1px solid var(--border); background: var(--raised); padding: 11px 9px; overflow: auto;">
-          <div style="font-family: 'Inter', sans-serif; font-size: 11.5px; font-weight: 600; color: var(--muted); letter-spacing: .02em; padding: 2px 6px 9px;">Family</div>
+          <div style="font-family: var(--ui-font); font-size: 11.5px; font-weight: 600; color: var(--muted); letter-spacing: .02em; padding: 2px 6px 9px;">Family</div>
           <div style="display: grid; gap: 2px;">
             <sc-for list="{{ pickFams }}" as="fm" hint-placeholder-count="16">
               <div onClick="{{ fm.onSelect }}" data-ptr="{{ fm.ptrLabel }}" style="{{ fm.style }}" style-hover="background:var(--hover)">
@@ -910,7 +923,7 @@
         <div style="position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); text-align: center;">
           <div style="font-family: Bravura, 'Noto Music', serif; font-size: 46px; color: var(--accent); line-height: 1; transform: translateY(.28em);">{{ wheelGlyph }}</div>
           <div style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: .12em; padding-top: 8px;">{{ wheelName }}</div>
-          <div style="font-family: 'Inter', sans-serif; font-size: 11.5px; font-weight: 600; color: var(--muted); letter-spacing: .02em; padding-top: 3px;">STICK OR D-PAD CHOOSES · A APPLIES · B CLOSES</div>
+          <div style="font-family: var(--ui-font); font-size: 11.5px; font-weight: 600; color: var(--muted); letter-spacing: .02em; padding-top: 3px;">STICK OR D-PAD CHOOSES · A APPLIES · B CLOSES</div>
         </div>
         <sc-for list="{{ radialItems }}" as="r" hint-placeholder-count="8">
           <div onClick="{{ r.onSelect }}" data-ptr="{{ r.name }}" style="{{ r.style }}">
@@ -975,9 +988,10 @@ const DEFAULT_PLAYERS = [
   { name: 'Piano LH', short: 'Pno. LH', group: 2, clef: 'bass', instrument: 'acoustic_grand_piano', showLabel: false }
 ];
 syncStaves(DEFAULT_PLAYERS);
-const DOC_KEYS = ['notes', 'chords', 'divisi', 'condense', 'players', 'clefs', 'clefOctaves', 'instruments', 'title', 'composer', 'keyIdx', 'meter', 'tempo', 'bars', 'measureMarks'];
+const DOC_KEYS = ['notes', 'chords', 'divisi', 'condense', 'players', 'clefs', 'clefOctaves', 'instruments', 'title', 'composer', 'keyIdx', 'meter', 'tempo', 'bars', 'measureMarks', 'fontPack'];
 const STORE = 'legato.recovery.v1';
 const THEME_STORE = 'legato.theme.v1';
+const FONT_STORE = 'legato.fonts.v1';
 const TOUR_SEEN = 'legato.tour.v1';
 const TOUR = [
   { chip: '✛', btn: 'D-pad or left stick', title: 'Move the cursor', body: 'Up and down choose the pitch. Left and right move through the bar. Every step is spoken in the status line and you feel the pitch in the grips — low notes are deeper and longer, high notes lighter.' },
@@ -1084,6 +1098,17 @@ function themeById(id) { return THEMES.find(t => t.id === id) || THEMES[0]; }
 function themeCss(t) {
   return '--bg:' + t.bg + ';--panel:' + t.panel + ';--raised:' + t.raised + ';--control:' + t.control + ';--panel-low:' + t.panelLow + ';--border:' + t.border + ';--border-strong:' + t.borderStrong + ';--border-hover:' + t.borderHover + ';--hover:' + t.hover + ';--track:' + t.track + ';--input-bg:' + t.inputBg + ';--toggle-off:' + t.toggleOff + ';--text:' + t.text + ';--text-strong:' + t.textStrong + ';--text-2:' + t.text2 + ';--muted-text:' + t.mutedText + ';--muted:' + t.muted + ';--muted-2:' + t.muted2 + ';--muted-3:' + t.muted3 + ';--accent:' + t.accent + ';--accent-soft:' + t.accentSoft + ';--accent-rgb:' + t.accentRgb + ';--score-accent:' + t.scoreAccent + ';--paper:' + t.paper + ';--ink:' + t.ink + ';--staff-ink:' + t.staffInk + ';--ink-soft:' + t.inkSoft + ';--paper-muted:' + t.paperMuted + ';';
 }
+
+const FONT_PACKS = [
+  { id:'studio', name:'Studio', ui:"'Inter',sans-serif", score:"'Source Serif 4',serif" },
+  { id:'accessible', name:'Accessible', ui:"'Atkinson Hyperlegible',sans-serif", score:"'Noto Serif',serif" },
+  { id:'humanist', name:'Humanist', ui:"'Source Sans 3',sans-serif", score:"'EB Garamond',serif" },
+  { id:'plex', name:'Plex', ui:"'IBM Plex Sans',sans-serif", score:"'IBM Plex Serif',serif" },
+  { id:'classical', name:'Classical', ui:"'Noto Sans',sans-serif", score:"'Libre Baskerville',serif" },
+  { id:'clean', name:'Clean', ui:"'Noto Sans',sans-serif", score:"'Source Serif 4',serif" }
+];
+function fontById(id) { return FONT_PACKS.find(f => f.id === id) || FONT_PACKS[0]; }
+function fontCss(f) { return '--ui-font:' + f.ui + ';--score-font:' + f.score + ';'; }
 
 const KB_KEYS = ('abcdefghijklmnopqrstuvwxyz0123456789').split('').concat(['É', 'é', '♭', '♯', '.', ',', '-', "'", 'SPACE', 'DEL', 'DONE']);
 const CLEFS = [
@@ -1236,7 +1261,7 @@ class Component extends DCLogic {
     spoken: 'G5, quarter note, bar 1 beat 1 — Flute',
     padStatus: 'PAD 1 CONNECTED',
     title: 'Étude in D minor', composer: 'V. Kovalenko', keyIdx: 9, meter: 0,
-    kb: null, kbIdx: 0, kbShift: false, selId: null,
+    kb: null, kbIdx: 0, kbShift: false, selId: null, tieFrom: null,
     notes: [
       { s: 0, p: 3.5, d: 'q', step: 10 }, { s: 0, p: 4.5, d: 'e', step: 9 },
       { s: 0, p: 5, d: 'e', step: 11 }, { s: 0, p: 6, d: 'h', step: 12 },
@@ -1266,7 +1291,7 @@ class Component extends DCLogic {
     mix: DEFAULT_PLAYERS.map((p, i) => ({ vol: 80, pan: i % 2 ? 10 : -10, mute: false, solo: false })),
     tour: false, tourIdx: 0,
     hub: false, hubIdx: 0, panel: null, panelIdx: 0, addingPlayer: false,
-    calib: null, custom: {}, remapFor: null, remapIdx: 0, captureFor: null, metronome: false, countIn: false, spacing: 100, staffSize: 100, showBarNumbers: true, paper: 'Letter', orientation: 'Portrait', bars: 4, saveState: 'Autosaved', recovery: null, volume: 70, audition: true, haptics: true, sampleStatus: 'LOADING', oneHanded: false, deadzone: .14, repeatDelay: 300, repeatRate: 110, ptrSpeed: 11, focusRepeat: true, padLost: false, padEver: false, sidebarsHidden: false, autoScan: false, theme: 'verdant'
+    calib: null, custom: {}, remapFor: null, remapIdx: 0, captureFor: null, metronome: false, countIn: false, spacing: 100, staffSize: 100, showBarNumbers: true, paper: 'Letter', orientation: 'Portrait', bars: 4, saveState: 'Autosaved', recovery: null, volume: 70, audition: true, haptics: true, sampleStatus: 'LOADING', oneHanded: false, deadzone: .14, repeatDelay: 300, repeatRate: 110, ptrSpeed: 11, focusRepeat: true, padLost: false, padEver: false, sidebarsHidden: false, autoScan: false, theme: 'verdant', fontPack: 'studio'
   };
 
   movePointer(dx, dy) {
@@ -1302,6 +1327,7 @@ class Component extends DCLogic {
     };
     window.addEventListener('pointerdown', this._warm);
     try { const savedTheme = localStorage.getItem(THEME_STORE); if (savedTheme && THEMES.some(t => t.id === savedTheme)) this.setState({ theme: savedTheme }); } catch (e) {}
+    try { const savedFont = localStorage.getItem(FONT_STORE); if (savedFont && FONT_PACKS.some(f => f.id === savedFont)) this.setState({ fontPack: savedFont }); } catch (e) {}
     this.loadRecovery();
     try { if (!localStorage.getItem(TOUR_SEEN)) setTimeout(() => this.setState({ tour: true, tourIdx: 0, spoken: 'Welcome — this is the tutorial. A moves on, B closes.' }), 700); } catch (e) {}
     window.addEventListener('keydown', this._warm);
@@ -1312,9 +1338,15 @@ class Component extends DCLogic {
   componentDidUpdate() {
     requestAnimationFrame(() => this.syncGlobalSelection());
   }
+  enterScoreEditor() {
+    document.querySelectorAll('[data-scan-selected="true"]').forEach(el => el.removeAttribute('data-scan-selected'));
+    this.rumble('tick');
+    this.setState({ zone: 3, focus: 0, spoken: 'Score editor — arrows move through the score; use normal zone navigation to leave' });
+  }
   visibleScanItems() {
     const all = Array.from(document.querySelectorAll('[data-ptr]')).filter(el => {
-      if (el.offsetParent === null || el.closest('[data-scroll="score"]')) return false;
+      const scoreShell = el.getAttribute('data-score-editor-shell') === 'true';
+      if (el.offsetParent === null || (el.closest('[data-scroll="score"]') && !scoreShell)) return false;
       if (el.getAttribute('aria-hidden') === 'true' || el.getAttribute('aria-disabled') === 'true') return false;
       const r = el.getBoundingClientRect();
       return r.width > 0 && r.height > 0;
@@ -1331,6 +1363,7 @@ class Component extends DCLogic {
     });
   }
   scanZoneForElement(el) {
+    if (el.getAttribute('data-score-editor-shell') === 'true') return 0;
     if (el.closest('[data-scroll="players"]')) return 1;
     if (el.closest('[data-scroll="toolbar"]')) return 2;
     if (el.closest('[data-scroll="props"]')) return 4;
@@ -1460,7 +1493,8 @@ class Component extends DCLogic {
       if (sel) { this.editNote(n => ({ marks: (n.marks || []).concat([{ g: name === 'Lyrics' ? 'la' : glyph, place: /lyric|figured|fingering/i.test(name) ? 'below' : 'above', text: true }]) }), name + ' added'); msg = name + ' added — edit the words in the keyboard'; }
     } else if (cat === 'Lines') {
       if (sel) {
-        if (/^Tie|^Slur|^Phrase/.test(name)) { this.editNote({ tie: true }, name + ' started'); }
+        if (/^Tie/.test(name)) { this.toggleTie(); }
+        else if (/^Slur|^Phrase/.test(name)) { this.editNote({ line: glyph }, name + ' started'); }
         else this.editNote(n => ({ line: glyph, marks: (n.marks || []).concat([{ g: glyph, place: 'below' }]) }), name + ' started from this note');
         msg = name + ' started from this note';
       }
@@ -1527,7 +1561,7 @@ class Component extends DCLogic {
     const s = this.state, i = s.radialIdx;
     if (i < DURS.length) this.setDur(i);
     else if (i === DURS.length) this.setState(p => ({ dots: p.dots === 2 ? 0 : p.dots + 1, spoken: 'Augmentation dots: ' + (p.dots === 2 ? 0 : p.dots + 1) }));
-    else this.setState({ spoken: 'Tie applied from this note' });
+    else this.toggleTie();
     this.setState({ radial: false });
   }
   wheelMove(d) {
@@ -2293,8 +2327,10 @@ class Component extends DCLogic {
       let beats = noteBeats(n);
       // a tied chain sounds once, for its full combined length
       let chain = n, guard = 0;
-      while (chain && chain.tie && guard++ < 32) {
-        const nxt = s.notes.filter(x => x.s === n.s && (x.voice || 1) === (n.voice || 1) && !x.rest && Math.abs(x.p - (chain.p + noteBeats(chain))) < .002)[0];
+      while (chain && (chain.tie || chain.tieTo) && guard++ < 32) {
+        const nxt = chain.tieTo
+          ? s.notes.find(x => x.id === chain.tieTo)
+          : s.notes.filter(x => x.s === n.s && (x.voice || 1) === (n.voice || 1) && !x.rest && x.step === chain.step && Math.abs(x.p - (chain.p + noteBeats(chain))) < .002)[0];
         if (!nxt) break;
         beats += noteBeats(nxt);
         this._fired['tied' + s.notes.indexOf(nxt)] = 1;
@@ -2816,9 +2852,9 @@ class Component extends DCLogic {
     const embedded = Array.from(document.querySelectorAll('style')).map(el => el.textContent || '').join('\n');
     const pageName = this.state.paper === 'A4' ? 'A4' : (this.state.paper === 'Tabloid' ? '11in 17in' : 'letter');
     const orientation = String(this.state.orientation || 'Portrait').toLowerCase();
-    const vars = themeCss(themeById(this.state.theme));
+    const vars = themeCss(themeById(this.state.theme)) + fontCss(fontById(this.state.fontPack));
     win.document.open();
-    win.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + this.esc(this.state.title || 'Legato score') + '</title><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Source+Serif+4:wght@500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Noto+Music&amp;display=swap" rel="stylesheet"><style>:root{' + vars + '}' + embedded + '@page{size:' + pageName + ' ' + orientation + ';margin:10mm}html,body{margin:0!important;padding:0!important;background:var(--paper)!important;color:var(--ink)!important}body{display:block!important;overflow:visible!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}[data-print-score]{width:100%!important;max-width:none!important;min-height:0!important;box-shadow:none!important}</style></head><body>' + clone.outerHTML + '</body></html>');
+    win.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + this.esc(this.state.title || 'Legato score') + '</title><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&amp;family=EB+Garamond:wght@500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Serif:wght@500;600&amp;family=Inter:wght@400;500;600;700&amp;family=Libre+Baskerville:wght@400;700&amp;family=Noto+Music&amp;family=Noto+Sans:wght@400;500;600;700&amp;family=Noto+Serif:wght@500;600&amp;family=Source+Sans+3:wght@400;500;600;700&amp;family=Source+Serif+4:wght@500;600&amp;display=swap" rel="stylesheet"><style>:root{' + vars + '}' + embedded + '@page{size:' + pageName + ' ' + orientation + ';margin:10mm}html,body{margin:0!important;padding:0!important;background:var(--paper)!important;color:var(--ink)!important}body{display:block!important;overflow:visible!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}[data-print-score]{width:100%!important;max-width:none!important;min-height:0!important;box-shadow:none!important}</style></head><body>' + clone.outerHTML + '</body></html>');
     win.document.close();
     this.setState({ spoken: 'Score-only print view opened' });
     const printNow = () => setTimeout(() => { win.focus(); win.print(); }, 120);
@@ -2996,6 +3032,11 @@ class Component extends DCLogic {
     if (kind === 'title' || kind === 'composer') return this.setState({ staff: i }, () => this.openKeyboard(kind));
     this.setState({ staff: i, panel: kind, panelIdx: 0, hub: false, halo: false, menu: false, spoken: 'Edit ' + kind + ' for ' + STAVES[i].name });
   }
+  setFontPack(id) {
+    const f = fontById(id);
+    try { localStorage.setItem(FONT_STORE, f.id); } catch (e) {}
+    this.setState({ fontPack: f.id, spoken: f.name + ' font set' });
+  }
   setTheme(id) {
     const theme = themeById(id);
     try { localStorage.setItem(THEME_STORE, theme.id); } catch (e) {}
@@ -3100,21 +3141,44 @@ class Component extends DCLogic {
     const stack = this.state.notes.filter(n => !n.rest && n.s === sel.s && (n.voice || 1) === (sel.voice || 1) && Math.abs(n.p - sel.p) < .002);
     this.rumble(stack.length > 1 ? 'soft' : 'firm');
     this.setState(p => {
-      const rest = stack.length > 1 ? [] : [{ id: 'n' + Math.random().toString(36).slice(2, 8), s: sel.s, p: sel.p, d: sel.d, step: 4, voice: sel.voice || 1, rest: true }];
       const others = stack.filter(n => n.id !== sel.id);
       const next = others.sort((a, b) => b.step - a.step)[0];
       return {
-        notes: p.notes.filter(n => n.id !== sel.id).concat(rest),
+        notes: p.notes.filter(n => n.id !== sel.id),
         selId: next ? next.id : null,
         step: next ? next.step : p.step,
         spoken: stack.length > 1
           ? this.pitchName(sel.step, sel.s) + ' removed from the chord — ' + (stack.length - 1) + ' left'
-          : 'Note deleted — rest inserted'
+          : 'Note deleted'
       };
     });
   }
   toggleTie() {
-    if (!this.editNote(n => ({ tie: !n.tie }), 'Tie toggled')) this.setState({ spoken: 'Select a note to tie it' });
+    const sel = this.selected();
+    if (!sel || sel.rest) return this.setState({ tieFrom: null, spoken: 'Select the first note of the tie' });
+    if (sel.tie || sel.tieTo) {
+      return this.editNote({ tie: false, tieTo: null }, 'Tie removed');
+    }
+    this.setState({ tieFrom: sel.id, spoken: 'Tie start selected — choose the adjacent note of the same pitch and press A' });
+  }
+  finishTie(target) {
+    const start = this.state.notes.find(n => n.id === this.state.tieFrom);
+    if (!start) return this.setState({ tieFrom: null, spoken: 'The tie start no longer exists' });
+    if (!target || target.rest) return this.setState({ spoken: 'A tie must end on a note' });
+    if (!target.id) target.id = 'n' + Math.random().toString(36).slice(2, 8);
+    const sameStaff = target.s === start.s;
+    const sameVoice = (target.voice || 1) === (start.voice || 1);
+    const startMidi = midiFor(start.step, this.state.clefs[start.s] === 'bass', start.acc, KEYS[this.state.keyIdx], (this.state.clefOctaves || [])[start.s]);
+    const targetMidi = midiFor(target.step, this.state.clefs[target.s] === 'bass', target.acc, KEYS[this.state.keyIdx], (this.state.clefOctaves || [])[target.s]);
+    const adjacent = Math.abs(target.p - (start.p + noteBeats(start))) < .01;
+    if (!sameStaff || !sameVoice || startMidi !== targetMidi || !adjacent) {
+      return this.setState({ spoken: 'That cannot be tied — choose the immediately following note of the same pitch, voice and staff' });
+    }
+    this.setState(s => ({
+      notes: s.notes.map(n => n.id === start.id ? Object.assign({}, n, { tie: true, tieTo: target.id }) : n),
+      tieFrom: null, selId: target.id, staff: target.s, pos: target.p, step: target.step,
+      spoken: 'Tie completed from point one to point two'
+    }));
   }
   toggleTuplet(n) {
     const sel = this.selected();
@@ -3218,8 +3282,7 @@ class Component extends DCLogic {
       if (!list.length) return this.setState({ spoken: 'The selected range is already empty' });
       this.rumble('firm');
       return this.setState(p => {
-        const rests = list.filter(n => !n.rest).map(n => ({ id: 'n' + Math.random().toString(36).slice(2, 8), s: n.s, p: n.p, d: n.d, step: 4, voice: n.voice || 1, rest: true }));
-        return { notes: p.notes.filter(n => ids.indexOf(n.id) < 0).concat(rests), range: null, selId: null, spoken: list.length + ' items deleted — rests inserted' };
+        return { notes: p.notes.filter(n => ids.indexOf(n.id) < 0), range: null, selId: null, spoken: list.length + ' items deleted' };
       });
     }
     this.deleteNote();
@@ -3245,14 +3308,15 @@ class Component extends DCLogic {
     return true;
   }
   selectNote(n) {
+    if (!n) return this.setState({ selId: null });
+    if (!n.id) n.id = 'n' + Math.random().toString(36).slice(2, 8);
+    if (this.state.tieFrom && n.id !== this.state.tieFrom) return this.finishTie(n);
     if (this.state.zone !== 3) this.setState({ zone: 3 });
     if (n.rest) {
       this.setState({ selId: n.id, staff: n.s, pos: n.p, step: n.step,
         spoken: (DURS.find(d => d.id === n.d) || DURS[2]).name.toLowerCase() + ' rest, bar ' + (Math.floor(n.p / this.barCapacity()) + 1) + ' — silent' });
       return;
     }
-    if (!n) return this.setState({ selId: null });
-    if (!n.id) n.id = 'n' + Math.random().toString(36).slice(2, 8);
     this.audition(n.step, n.s, n.acc, n.art, n);
     this.setState({ selId: n.id, staff: n.s, pos: n.p, step: n.step, spoken: this.describe(n) + ' selected — up and down transpose it' });
   }
@@ -3341,12 +3405,14 @@ class Component extends DCLogic {
     this.setState(s => {
       const n = Object.assign({}, s.armed, { id: 'n' + Math.random().toString(36).slice(2, 8), s: s.staff, p: s.pos, d: DURS[s.dur].id, step: s.step, voice: s.voice, rest: s.entry === 'rest', dots: s.dots, acc: s.acc === 'n' ? null : (s.acc === 'f' ? SM.flat : SM.sharp) });
       const usedArmed = Object.keys(s.armed || {}).some(k => s.armed[k]);
+      const nEnd = s.pos + noteBeats(n);
+      const kept = s.notes.filter(x => !(x.rest && x.s === s.staff && (x.voice || 1) === (s.voice || 1) && x.p < nEnd - .0005 && x.p + noteBeats(x) > s.pos + .0005));
       const cap2 = this.barCapacity();
       let nextBars = s.bars;
       const landing = s.pos + noteBeats({ d: DURS[s.dur].id, dots: s.dots });
       if (landing > nextBars * cap2 - .001 - cap2 && nextBars < 128) nextBars += 1;
       return {
-        notes: s.notes.concat([n]),
+        notes: kept.concat([n]),
         armed: {},
         bars: nextBars,
         pos: Math.min(nextBars * cap2 - .001, s.pos + noteBeats({ d: DURS[s.dur].id, dots: s.dots })),
@@ -3494,6 +3560,7 @@ class Component extends DCLogic {
     if (s.zone === 4 && s.mode === 0) return [{ t: 'proj', i: 0, label: 'New score' }, { t: 'proj', i: 1, label: 'Open a project file' }, { t: 'proj', i: 2, label: 'Save the project' }]
       .concat([{ t: 'title', i: 0, label: 'Title' }, { t: 'composer', i: 0, label: 'Composer' }, { t: 'key', i: 0, label: 'Key signature' }, { t: 'meter', i: 0, label: 'Time signature' }, { t: 'tempo', i: 0, label: 'Tempo' }])
       .concat(THEMES.map((t, i) => ({ t: 'theme', i: i, label: t.name + ' theme' })))
+      .concat(FONT_PACKS.map((f, i) => ({ t: 'font', i: i, label: f.name + ' font' })))
       .concat(CLEFS.map((c, i) => ({ t: 'clef', i: i, label: c.name + ' clef' })));
     if (s.zone === 4 && s.mode === 2) return [
       { t: 'eng', i: 0, label: 'Staff size' }, { t: 'eng', i: 1, label: 'Note spacing' },
@@ -3518,6 +3585,7 @@ class Component extends DCLogic {
   adjustFocus(d) { this.moveConsoleFocus(d,0); }
   activateFocus() {
     const liveTarget = document.querySelector('[data-scan-selected="true"]');
+    if (liveTarget && liveTarget.getAttribute('data-score-editor-shell') === 'true') { liveTarget.click(); return; }
     if (liveTarget && this.state.zone !== 3) { liveTarget.click(); return; }
     const list = this.focusList(), it = list[this.state.focus];
     if (!it) return;
@@ -3535,6 +3603,7 @@ class Component extends DCLogic {
     else if (it.t === 'ctrlact') [() => this.resetBindings(), () => { this.setState({ calib: 'Calibrating — move both sticks and press every button', spoken: 'Calibration started' }); this._calib = { buttons: {}, axes: {} }; }, () => { const c = this._calib || { buttons: {}, axes: {} }; this.setState({ calib: Object.keys(c.buttons).length + ' buttons and ' + Object.keys(c.axes).length + ' axes seen', spoken: 'Calibration finished' }); }, () => { const v = this._profileExport; if (v) v(); }, () => { const el = document.getElementById('legato-profile'); if (el) el.click(); }][it.i]();
     else if (it.t === 'proj') [() => this.newProject(), () => { const el = document.getElementById('legato-open'); if (el) el.click(); }, () => this.saveProject()][it.i]();
     else if (it.t === 'theme') this.setTheme(THEMES[it.i].id);
+    else if (it.t === 'font') this.setFontPack(FONT_PACKS[it.i].id);
     else if (it.t === 'eng') { const c = this._engrave && this._engrave[it.i]; if (c) c.inc(); }
     else if (it.t === 'prt') { const c = this._print && this._print[it.i]; if (c) c.act(); }
     else if (it.t === 'act') [() => this.printScore(), () => this.exportMxl(), () => this.exportMusicXML(), () => this.exportMidi()][it.i]();
@@ -3711,6 +3780,7 @@ class Component extends DCLogic {
     STAFF_GAP = (s.eng && s.eng.systemGap) || 74;
     syncStaves(s.players || DEFAULT_PLAYERS, vis.hidden);
     const theme = themeById(s.theme);
+    const font = fontById(s.fontPack);
     const accent = theme.accent;
     const shortest = Math.min.apply(null, s.notes.filter(n => !n.rest).map(noteBeats).concat([1]));
     const densityScale = shortest <= .126 ? 2.55 : (shortest <= .251 ? 1.7 : (shortest <= .501 ? 1.14 : 1));
@@ -3723,7 +3793,14 @@ class Component extends DCLogic {
     const noteX = p => noteStart + p * XS;
 
     return {
-      rootStyle: 'width:100%;height:100vh;background:var(--bg);color:var(--text);display:grid;grid-template-rows:46px 30px minmax(0,1fr);grid-template-columns:minmax(0,1fr);overflow:hidden;' + themeCss(theme),
+      rootStyle: 'width:100%;height:100vh;background:var(--bg);color:var(--text);font-family:var(--ui-font);display:grid;grid-template-rows:46px 30px minmax(0,1fr);grid-template-columns:minmax(0,1fr);overflow:hidden;' + themeCss(theme) + fontCss(font),
+      fontRows: FONT_PACKS.map(f => ({
+        name: f.name,
+        sample: 'Legato · Étude',
+        onSelect: () => this.setFontPack(f.id),
+        style: 'display:flex;flex-direction:column;gap:4px;padding:9px;border-radius:6px;cursor:pointer;border:1px solid ' + (f.id === font.id ? accent : 'var(--border)') + ';background:' + (f.id === font.id ? 'rgba(var(--accent-rgb),.16)' : 'var(--control)') + ';font-family:' + f.ui + ';',
+        sampleStyle: 'font-family:' + f.score + ';font-size:15px;color:var(--text);'
+      })),
       themeRows: THEMES.map(t => ({
         name: t.name,
         onSelect: () => this.setTheme(t.id),
@@ -3841,9 +3918,9 @@ class Component extends DCLogic {
         const steps = K.type === 'flat' ? FLAT_STEPS : SHARP_STEPS;
         const met = METERS[s.meter].split('/');
         const timeGlyphs = value => String(value).split('').map(d => String.fromCharCode(0xE080 + Number(d))).join('');
-        const timeWidth = Math.max(String(met[0]).length, String(met[1]).length) * 20 + 8;
+        const timeWidth = Math.max(String(met[0]).length, String(met[1]).length) * 17 + 6;
         const octave = (s.clefOctaves || [])[i] || 0;
-        const keyX = 52, timeX = 70 + (K.n || 0) * 12;
+        const keyX = 52, timeX = 76 + (K.n || 0) * 12;
         const octaveName = octave === 0 ? 'normal' : (Math.abs(octave) === 1 ? '8' : '15') + (octave > 0 ? ' above' : ' below');
         return {
           label: st.label, clef: cl.glyph,
@@ -3854,13 +3931,13 @@ class Component extends DCLogic {
           })),
           timeTop: timeGlyphs(met[0]),
           timeBot: timeGlyphs(met[1]),
-          timeTopStyle: 'position:absolute;left:' + timeX + 'px;top:-3px;width:' + timeWidth + 'px;height:27px;display:grid;place-items:center;' + BR + 'font-size:43px;line-height:1;color:var(--ink);white-space:nowrap;cursor:pointer;z-index:5;',
-          timeBotStyle: 'position:absolute;left:' + timeX + 'px;top:21px;width:' + timeWidth + 'px;height:27px;display:grid;place-items:center;' + BR + 'font-size:43px;line-height:1;color:var(--ink);white-space:nowrap;cursor:pointer;z-index:5;',
-          timeHitStyle: 'position:absolute;left:' + (timeX - 3) + 'px;top:-6px;width:' + (timeWidth + 6) + 'px;height:60px;cursor:pointer;z-index:4;',
+          timeTopStyle: 'position:absolute;left:' + timeX + 'px;top:0;width:' + timeWidth + 'px;height:24px;display:flex;align-items:center;justify-content:center;' + BR + 'font-size:32px;line-height:24px;color:var(--ink);white-space:nowrap;cursor:pointer;z-index:5;',
+          timeBotStyle: 'position:absolute;left:' + timeX + 'px;top:24px;width:' + timeWidth + 'px;height:24px;display:flex;align-items:center;justify-content:center;' + BR + 'font-size:32px;line-height:24px;color:var(--ink);white-space:nowrap;cursor:pointer;z-index:5;',
+          timeHitStyle: 'position:absolute;left:' + (timeX - 3) + 'px;top:0;width:' + (timeWidth + 6) + 'px;height:48px;cursor:pointer;z-index:4;',
           keyHitStyle: 'position:absolute;left:' + (keyX - 4) + 'px;top:-6px;width:' + Math.max(18, (K.n || 0) * 12 + 8) + 'px;height:60px;cursor:pointer;z-index:4;',
           octaveText: octave ? (Math.abs(octave) === 1 ? '8' : '15') : '',
           octaveStyle: octave
-            ? 'position:absolute;left:24px;top:' + (octave > 0 ? '-17px' : '40px') + ';min-width:18px;text-align:center;font-family:\'Inter\',sans-serif;font-size:11px;font-weight:700;line-height:1;color:var(--ink);cursor:pointer;z-index:7;padding:2px;'
+            ? 'position:absolute;left:24px;top:' + (octave > 0 ? '-17px' : '40px') + ';min-width:18px;text-align:center;font-family:var(--ui-font);font-size:11px;font-weight:700;line-height:1;color:var(--ink);cursor:pointer;z-index:7;padding:2px;'
             : 'display:none;',
           octavePtr: 'Edit octave clef — ' + octaveName,
           clefPtr: 'Edit ' + cl.name + ' clef',
@@ -4099,6 +4176,7 @@ class Component extends DCLogic {
         style: 'display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 9px;border-radius:5px;cursor:pointer;background:var(--control);border:1px solid var(--border);' + this.ring('instrument', 0)
       },
       openPicker: () => this.openPicker(),
+      enterScoreEditor: () => this.enterScoreEditor(),
       kbOpen: !!s.kb,
       kbField: s.kb === 'composer' ? 'COMPOSER' : 'TITLE',
       kbText: s.kb ? (s[s.kb] || '') : '',
@@ -4140,7 +4218,7 @@ class Component extends DCLogic {
           const y = st.top + (r.v === 2 || r.v === 4 ? 34 : 24);
           return {
             glyph: REST_GLYPHS[r.d] || REST_GLYPHS.q,
-            style: glyphAt(noteX(r.p) - 7, y, 48, 'rgba(27,26,23,.42)')
+            style: glyphAt(noteX(r.p) - 7, y, 48, 'rgba(27,26,23,.42)') + 'pointer-events:none;'
           };
         });
       })(),
@@ -4165,7 +4243,7 @@ class Component extends DCLogic {
         return out;
       })(),
       staffHits: STAVES.map((st, i) => ({
-        style: 'position:absolute;left:' + (X0 - 16) + 'px;top:' + (st.top - 16) + 'px;width:' + (s.bars * this.barCapacity() * XS + 20) + 'px;height:80px;cursor:crosshair;',
+        style: 'position:absolute;left:' + (X0 - 16) + 'px;top:' + (st.top - 16) + 'px;width:' + (s.bars * this.barCapacity() * XS + 20) + 'px;height:80px;cursor:crosshair;z-index:1;',
         onClick: (e) => {
           const box = e.currentTarget.getBoundingClientRect();
           const x = e.clientX - box.left, y = e.clientY - box.top;
@@ -4219,7 +4297,7 @@ class Component extends DCLogic {
                   + 'border-left:1.6px solid var(--ink);border-right:1.6px solid var(--ink);'
                   + (up ? '' : 'border-top:none;border-bottom:1.6px solid var(--ink);'),
               numStyle: 'position:absolute;left:' + (x1 + width / 2 - 9) + 'px;top:' + (edge - (up ? 9 : -2)) + 'px;width:18px;text-align:center;'
-                + 'font-family:\'Inter\',sans-serif;font-size:14px;font-style:italic;font-weight:700;color:var(--ink);'
+                + 'font-family:var(--ui-font);font-size:14px;font-style:italic;font-weight:700;color:var(--ink);'
                 + 'background:var(--paper);line-height:1.1;'
             });
             run = [];
@@ -4247,14 +4325,14 @@ class Component extends DCLogic {
             seen[host] = 1;
             const st = STAVES[host];
             if (!st || st.hidden) return;
-            out.push({ text: 'a2', style: 'position:absolute;left:' + (noteX(0) - 6) + 'px;top:' + (st.top - 22) + 'px;font-family:\'Inter\',sans-serif;font-size:13px;font-style:italic;font-weight:600;color:var(--ink);' });
+            out.push({ text: 'a2', style: 'position:absolute;left:' + (noteX(0) - 6) + 'px;top:' + (st.top - 22) + 'px;font-family:var(--ui-font);font-size:13px;font-style:italic;font-weight:600;color:var(--ink);' });
           });
         }
         Object.keys(s.divisi || {}).forEach(k => {
           const i = Number(k), n = s.divisi[k];
           const st = STAVES[i];
           if (!st || st.hidden || !n || n < 2) return;
-          out.push({ text: n === 2 ? 'div.' : 'div. a' + n, style: 'position:absolute;left:' + (noteX(0) - 6) + 'px;top:' + (st.top - 22) + 'px;font-family:\'Inter\',sans-serif;font-size:13px;font-style:italic;font-weight:600;color:var(--ink);' });
+          out.push({ text: n === 2 ? 'div.' : 'div. a' + n, style: 'position:absolute;left:' + (noteX(0) - 6) + 'px;top:' + (st.top - 22) + 'px;font-family:var(--ui-font);font-size:13px;font-style:italic;font-weight:600;color:var(--ink);' });
         });
         return out;
       })(),
@@ -4262,7 +4340,7 @@ class Component extends DCLogic {
         const topStaff = STAVES.find(st => !st.hidden) || STAVES[0];
         return {
           text: c.text,
-          style: 'position:absolute;left:' + (noteX(c.p) - 8) + 'px;top:' + (topStaff.top - 44) + 'px;font-family:\'Inter\',sans-serif;font-size:17px;font-weight:600;color:var(--ink);white-space:nowrap;'
+          style: 'position:absolute;left:' + (noteX(c.p) - 8) + 'px;top:' + (topStaff.top - 44) + 'px;font-family:var(--ui-font);font-size:17px;font-weight:600;color:var(--ink);white-space:nowrap;'
             + (s.chordIdx === i ? 'background:rgba(var(--accent-rgb),.22);border-radius:3px;padding:0 3px;' : '')
         };
       }),
@@ -4299,7 +4377,7 @@ class Component extends DCLogic {
           ptr: 'Edit instrument for ' + name,
           onSelect: () => this.openScoreEditor('instrument', staffIndex),
           style: 'position:absolute;left:-108px;top:' + (mid - 8) + 'px;width:64px;text-align:right;'
-            + 'font-family:\'Inter\',sans-serif;font-size:13px;color:var(--ink-soft);letter-spacing:.005em;line-height:1.1;cursor:pointer;padding:2px 3px;'
+            + 'font-family:var(--ui-font);font-size:13px;color:var(--ink-soft);letter-spacing:.005em;line-height:1.1;cursor:pointer;padding:2px 3px;'
         };
       }),
       systemBracket: 'position:absolute;left:-38px;top:' + STAVES[0].top + 'px;width:3px;height:' + (systemBottom - STAVES[0].top) + 'px;background:var(--staff-ink);',
@@ -4566,7 +4644,7 @@ class Component extends DCLogic {
           const flagGlyph = (!bi && ownsStem && stemless && FLAG_GLYPH[n.d]) ? FLAG_GLYPH[n.d][up ? 0 : 1] : '';
           const renderHeads = !ci || ownsStem;
           const anchor = n.step;
-          const nextTie = n.tie ? s.notes.filter(m => m.s === n.s && m.p > n.p).sort((a, b) => a.p - b.p)[0] : null;
+          const nextTie = n.tieTo ? s.notes.find(m => m.id === n.tieTo) : (n.tie ? s.notes.filter(m => !m.rest && m.s === n.s && (m.voice || 1) === (n.voice || 1) && m.step === n.step && Math.abs(m.p - (n.p + noteBeats(n))) < .01).sort((a, b) => a.p - b.p)[0] : null);
           return {
             wrapStyle: 'position:absolute;left:' + noteX(n.p) + 'px;top:' + top + 'px;width:0;height:0;',
             onSelect: () => this.selectNote(n),
@@ -4578,7 +4656,7 @@ class Component extends DCLogic {
               : (!renderHeads ? 'display:none;' : glyphAt(stemless ? layout.left[anchor] : -7, 0, n.cue ? 34 : 48, headColor) + 'z-index:3;'),
             cueLabel: n.cue && n.cueFrom ? n.cueFrom : '',
             cueLabelStyle: n.cue && n.cueFrom
-              ? 'position:absolute;left:-6px;top:' + (up ? -46 : 34) + 'px;font-family:\'Inter\',sans-serif;font-size:11px;font-style:italic;color:#5c5850;white-space:nowrap;'
+              ? 'position:absolute;left:-6px;top:' + (up ? -46 : 34) + 'px;font-family:var(--ui-font);font-size:11px;font-style:italic;color:#5c5850;white-space:nowrap;'
               : 'display:none;',
             chordHeads: renderHeads && stemless ? sourceHeads.filter(step => step !== anchor).map(step => ({
               style: glyphAt(layout.left[step], -(step - anchor) * 6, 48, headColor) + 'z-index:3;',
@@ -4593,7 +4671,7 @@ class Component extends DCLogic {
             marks: (n.marks || []).map((mk, mi) => ({
               g: mk.g,
               style: mk.text
-                ? 'position:absolute;left:-6px;top:' + (mk.place === 'below' ? 40 + mi * 13 : -34 - mi * 13) + 'px;font-family:\'Inter\',sans-serif;font-size:12px;font-style:italic;color:var(--ink);white-space:nowrap;'
+                ? 'position:absolute;left:-6px;top:' + (mk.place === 'below' ? 40 + mi * 13 : -34 - mi * 13) + 'px;font-family:var(--ui-font);font-size:12px;font-style:italic;color:var(--ink);white-space:nowrap;'
                 : glyphAt(-7, mk.place === 'below' ? 52 + mi * 15 : -40 - mi * 15, 40)
             })),
             tieStyle: nextTie ? 'position:absolute;left:4px;top:' + (up ? 8 : -14) + 'px;width:' + Math.max(14, (nextTie.p - n.p) * XS - 12) + 'px;height:11px;border:2px solid var(--ink);border-color:' + (up ? 'transparent transparent var(--ink) transparent' : 'var(--ink) transparent transparent transparent') + ';border-radius:' + (up ? '0 0 50% 50%' : '50% 50% 0 0') + ';' : 'display:none;',

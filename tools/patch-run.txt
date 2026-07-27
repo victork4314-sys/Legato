@@ -1,1 +1,1 @@
-tie drawing endpoint: expected 1 match(es), found 0
+Applied rests, two-point ties, selectable score editor, staff clicking, time placement and font choices
