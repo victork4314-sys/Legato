@@ -1,9 +1,7 @@
 name: Top bar auto scan check
 
 on:
-  push:
-    branches:
-      - fix/top-bar-auto-scan
+  pull_request:
     paths:
       - .top-bar-scan-trigger
 
@@ -12,11 +10,12 @@ permissions:
 
 jobs:
   patch-and-test:
+    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: fix/top-bar-auto-scan
+          ref: ${{ github.head_ref }}
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
@@ -66,17 +65,19 @@ jobs:
             await page.waitForFunction(() => !!window.__legatoOwner, null, { timeout: 30000 });
             const result = await page.evaluate(() => {
               const owner = window.__legatoOwner;
-              owner.setState({ zone: 0, focus: 0 });
+              owner.state.zone = 0;
+              owner.state.focus = 0;
               const labels = owner.focusList().map(x => x.label);
-              const vals = owner.renderVals();
-              return {
-                labels,
-                pointerRing: vals.ptrChipStyle.includes('box-shadow'),
-                sidebarRing: (() => { owner.state.focus = 1; return owner.renderVals().sidebarsToggleStyle.includes('box-shadow'); })(),
-                scanRing: (() => { owner.state.focus = 2; return owner.renderVals().autoScanToggleStyle.includes('box-shadow'); })(),
-                menuRing: (() => { owner.state.focus = 3; return owner.renderVals().modeBadgeStyle.includes('box-shadow'); })(),
-                fileRing: (() => { owner.state.focus = 4; return owner.renderVals().fileMenuStyle.includes('box-shadow'); })()
-              };
+              const pointerRing = owner.renderVals().ptrChipStyle.includes('box-shadow');
+              owner.state.focus = 1;
+              const sidebarRing = owner.renderVals().sidebarsToggleStyle.includes('box-shadow');
+              owner.state.focus = 2;
+              const scanRing = owner.renderVals().autoScanToggleStyle.includes('box-shadow');
+              owner.state.focus = 3;
+              const menuRing = owner.renderVals().modeBadgeStyle.includes('box-shadow');
+              owner.state.focus = 4;
+              const fileRing = owner.renderVals().fileMenuStyle.includes('box-shadow');
+              return { labels, pointerRing, sidebarRing, scanRing, menuRing, fileRing };
             });
             const expected = ['Turn pointer on', 'Hide sidebars', 'Start auto scan', 'Open the menu', 'Open the file menu'];
             assert(JSON.stringify(result.labels.slice(0, 5)) === JSON.stringify(expected), 'top bar controls are not first in scan: ' + result.labels.join(' | '));
@@ -92,4 +93,4 @@ jobs:
           git config user.email "actions@users.noreply.github.com"
           git add index.html
           git commit -m "Include full top bar in auto scan"
-          git push origin HEAD:fix/top-bar-auto-scan
+          git push origin HEAD:${{ github.head_ref }}
