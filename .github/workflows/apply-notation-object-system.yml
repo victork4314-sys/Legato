@@ -31,11 +31,17 @@ jobs:
           p.write_text(t.replace(old, new, 1), encoding='utf-8')
           PY
       - name: Apply guarded notation patch
-        run: python3 tools/apply-notation-object-system.py
+        run: |
+          if grep -q '20260727-notation-objects-2' index.html; then echo 'Completed notation build already present';
+          else python3 tools/apply-notation-object-system.py; fi
       - name: Apply lifecycle and export follow-ups
-        run: python3 tools/fix-notation-object-system.py
+        run: |
+          if grep -q '20260727-notation-objects-2' index.html; then echo 'Lifecycle follow-up already present';
+          else python3 tools/fix-notation-object-system.py; fi
       - name: Repair glissando syntax
-        run: python3 tools/fix-notation-syntax.py
+        run: |
+          if grep -q "border-top:1.5px solid ' + accent2" index.html; then echo 'Glissando syntax already repaired';
+          else python3 tools/fix-notation-syntax.py; fi
       - name: Check embedded JavaScript syntax
         run: |
           python3 - <<'PY'
