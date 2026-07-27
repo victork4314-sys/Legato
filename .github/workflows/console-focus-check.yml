@@ -40,37 +40,36 @@ jobs:
           npx playwright install --with-deps chromium >/dev/null 2>&1
       - name: Test normal console focus and complete right sidebar
         run: |
+          python -m http.server 4173 >/tmp/legato-http.log 2>&1 &
           cat > console-focus-test.js <<'JS'
           const { chromium } = require('playwright');
-          const fs = require('fs');
           (async()=>{
             const browser=await chromium.launch({headless:true});
             const page=await browser.newPage({viewport:{width:1600,height:1000}});
-            await page.setContent(fs.readFileSync('index.html','utf8'),{waitUntil:'domcontentloaded'});
-            await page.waitForTimeout(1000);
+            await page.goto('http://127.0.0.1:4173/index.html',{waitUntil:'networkidle'});
+            await page.waitForFunction(()=>!!window.__legatoOwner,null,{timeout:10000});
             const result=await page.evaluate(async()=>{
               const owner=window.__legatoOwner;
-              if(!owner) throw new Error('owner missing');
               const modes=[];
               for(let mode=0;mode<6;mode++){
                 owner.setState({mode,sidebarsHidden:false,zone:4,focus:0});
-                await new Promise(r=>setTimeout(r,100));
+                await new Promise(r=>setTimeout(r,120));
                 const right=owner.zoneScanItems(4);
                 if(!right.length) throw new Error('right sidebar empty in mode '+mode);
                 const raw=[...document.querySelectorAll('[data-scroll="props"] [data-ptr]')].filter(el=>el.offsetParent!==null);
                 const visibleRight=raw.filter(el=>!raw.some(other=>other!==el&&el.contains(other)));
                 if(right.length!==visibleRight.length) throw new Error(`right sidebar incomplete in mode ${mode}: ${right.length}/${visibleRight.length}`);
                 for(const el of right){
-                  owner.focusDomItem(el); await new Promise(r=>setTimeout(r,8));
+                  owner.focusDomItem(el); await new Promise(r=>setTimeout(r,10));
                   const selected=document.querySelectorAll('[data-scan-selected="true"]');
                   if(selected.length!==1||selected[0]!==el) throw new Error(`not exactly one selected in mode ${mode}: ${selected.length}`);
                 }
                 modes.push(right.length);
               }
-              owner.setState({mode:1,zone:2,focus:0}); await new Promise(r=>setTimeout(r,100));
+              owner.setState({mode:1,zone:2,focus:0}); await new Promise(r=>setTimeout(r,120));
               const start=owner.zoneScanItems(2)[0];
               if(!start) throw new Error('toolbar start missing');
-              owner.focusDomItem(start); owner.moveConsoleFocus(1,0); await new Promise(r=>setTimeout(r,40));
+              owner.focusDomItem(start); owner.moveConsoleFocus(1,0); await new Promise(r=>setTimeout(r,50));
               const selected=document.querySelector('[data-scan-selected="true"]');
               if(!selected) throw new Error('left/right lost focus');
               if(document.querySelectorAll('[data-scan-selected="true"]').length!==1) throw new Error('multiple highlights after right movement');
