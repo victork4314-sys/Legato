@@ -1,0 +1,59 @@
+name: Apply score entry and time signature fix
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - index.html
+      - tools/apply-score-entry-time-fix.py
+      - .github/workflows/apply-score-entry-time-fix.yml
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/score-entry-and-time-size
+      - name: Apply guarded patch
+        run: python3 tools/apply-score-entry-time-fix.py
+      - name: Check embedded JavaScript syntax
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          text = Path('index.html').read_text(encoding='utf-8')
+          blocks = re.findall(r'<script[^>]*>([\s\S]*?)</script>', text)
+          if not blocks:
+              raise SystemExit('No embedded JavaScript found')
+          Path('/tmp/legato-score-entry.js').write_text('\n'.join(blocks), encoding='utf-8')
+          PY
+          node --check /tmp/legato-score-entry.js
+      - name: Verify exact scope
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          t = Path('index.html').read_text(encoding='utf-8')
+          required = [
+            '20260727-score-entry-time-1',
+            'data-score-return="true"',
+            'SCORE EDITOR SELECTED · PRESS A',
+            'SCORE EDITOR ACTIVE · ARROWS MOVE CURSOR',
+            "returnToScoreHint: s.zone === 3 ? 'ACTIVE' : 'A ENTER'",
+            'font-size:40px;line-height:1',
+            "const DEFAULT_BINDINGS = { button0: 'confirm', button1: 'delete'",
+            "case 'previous-zone': if (s.zone === 3 && s.selId) { this.nudgeAccidental(-1); break; } this.cycleVisibleZone(-1); break;",
+            "case 'next-zone': if (s.zone === 3 && s.selId) { this.nudgeAccidental(1); break; } this.cycleVisibleZone(1); break;"
+          ]
+          for marker in required:
+              if marker not in t:
+                  raise SystemExit('Missing regression marker: ' + marker)
+          print('Score-entry and time-signature guards passed')
+          PY
+      - name: Commit repaired app
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet || git commit -m "Make score entry obvious and enlarge time signatures"
+          git push origin HEAD:fix/score-entry-and-time-size
