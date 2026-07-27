@@ -23,7 +23,7 @@ replace_once("['Accelerando','accel.']]]", "['Accelerando','accel.'],['Horizonta
 replace_once("if (/Tempo text/.test(name)) { this.openScoreEventPanel('tempo', 'Tempo', glyph); return; }", "if (/Tempo (?:text|change)/.test(name)) { this.openScoreEventPanel('tempo', 'Tempo', glyph); return; }", 'tempo handler')
 
 replace_once('data-ptr="{{ c.name }}" style="{{ c.style }}"', 'data-ptr="{{ c.name }}" data-halo-category="{{ c.index }}" style="{{ c.style }}"', 'halo category DOM marker')
-replace_once('data-ptr="{{ h.name }}" style="{{ h.style }}"', 'data-ptr="{{ h.name }}" data-halo-item="{{ h.index }}" style="{{ h.style }}"', 'halo item DOM marker')
+replace_once('<div onClick="{{ h.onSelect }}" data-ptr="{{ h.name }}" style="{{ h.style }}" style-hover="border-color:var(--border-hover)">', '<div onClick="{{ h.onSelect }}" data-ptr="{{ h.name }}" data-halo-item="{{ h.index }}" style="{{ h.style }}" style-hover="border-color:var(--border-hover)">', 'halo item DOM marker')
 
 replace_once("""  haloMove(dx, dy) {
     this.setState(s => {
