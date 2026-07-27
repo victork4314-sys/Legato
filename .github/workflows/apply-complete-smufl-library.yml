@@ -9,6 +9,7 @@ on:
       - tools/apply_complete_library.py
       - tools/apply_complete_library_v2.py
       - tools/apply_complete_library_v3.py
+      - tools/apply_complete_library_v4.py
       - tools/test_complete_library.mjs
       - .github/workflows/apply-complete-smufl-library.yml
 permissions:
@@ -49,7 +50,7 @@ jobs:
             echo 'Complete library integration already applied' > tools/complete-library-patch.txt
             CODE=0
           else
-            python3 tools/apply_complete_library_v3.py > tools/complete-library-patch.txt 2>&1
+            python3 tools/apply_complete_library_v4.py > tools/complete-library-patch.txt 2>&1
             CODE=$?
           fi
           echo "$CODE" > tools/complete-library-patch-exit.txt
