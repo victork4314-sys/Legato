@@ -1,0 +1,70 @@
+name: Final notation object validation
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - index.html
+      - tools/test-notation-object-system.mjs
+      - .github/workflows/validate-notation-object-system.yml
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/notation-object-system
+      - name: Check embedded JavaScript syntax
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          text = Path('index.html').read_text(encoding='utf-8')
+          blocks = re.findall(r'<script[^>]*>([\s\S]*?)</script>', text)
+          if not blocks:
+              raise SystemExit('No embedded JavaScript found')
+          Path('/tmp/legato-notation-objects.js').write_text('\n'.join(blocks), encoding='utf-8')
+          PY
+          node --check /tmp/legato-notation-objects.js
+      - name: Verify notation and protected controller guards
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          text = Path('index.html').read_text(encoding='utf-8')
+          required = [
+            '20260727-notation-objects-2',
+            "'scoreEvents', 'scoreSpans'",
+            'beginScoreSpan(type, name, glyph, editing)',
+            'finishScoreSpan(anchor)',
+            'placeScoreEvent(type, name, glyph, value, options)',
+            'clefAt(staff, pos, state)',
+            'keyAt(pos, state)',
+            'tempoAt(pos, state)',
+            'secondsBetween(start, end, state)',
+            'scoreEvents: (s.scoreEvents || []).map',
+            'scoreSpans: (() =>',
+            'Add musical notation at the cursor',
+            "kb: 'scoreText'",
+            'tempo changes and position-aware pitches included',
+            "if (s.spanDraft && action === 'confirm') return this.finishScoreSpan();",
+            "if (s.scoreObjectId && action === 'delete') return this.deleteScoreObject();",
+            "button4: 'previous-zone', button5: 'next-zone'",
+            'const BUMPER_COMBO_MS = 120;',
+            "case 'previous-zone': if (s.zone === 3 && s.selId) { this.nudgeAccidental(-1); break; } this.cycleVisibleZone(-1); break;",
+            "case 'next-zone': if (s.zone === 3 && s.selId) { this.nudgeAccidental(1); break; } this.cycleVisibleZone(1); break;"
+          ]
+          for marker in required:
+              if marker not in text:
+                  raise SystemExit('Missing marker: ' + marker)
+          print('Notation and protected controller guards passed')
+          PY
+      - name: Install browser runtime
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Run complete live lifecycle checks
+        run: |
+          python3 -m http.server 4173 >/tmp/legato-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID || true' EXIT
+          node tools/test-notation-object-system.mjs
