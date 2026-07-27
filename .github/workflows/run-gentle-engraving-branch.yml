@@ -1,9 +1,6 @@
 name: Run gentle engraving branch repair
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
     branches:
       - main
@@ -14,15 +11,32 @@ permissions:
 
 jobs:
   repair-safety-branch:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: fix/gentle-engraving-and-direct-editing
           fetch-depth: 0
+          show-progress: false
 
       - name: Patch requested engraving and editing areas
-        run: python3 .github/scripts/gentle_engraving_patch.py
+        shell: bash
+        run: |
+          set +e
+          python3 .github/scripts/gentle_engraving_patch.py > repair-error.txt 2>&1
+          code=$?
+          set -e
+          if [ "$code" -ne 0 ]; then
+            cat repair-error.txt
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add repair-error.txt
+            git commit -m "Record guarded repair mismatch"
+            git push origin HEAD:fix/gentle-engraving-and-direct-editing
+            exit "$code"
+          fi
+          rm -f repair-error.txt
 
       - name: Run engraving regression checks
         run: |
