@@ -1,0 +1,66 @@
+name: Apply notation object system
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - index.html
+      - tools/apply-notation-object-system.py
+      - .github/workflows/apply-notation-object-system.yml
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/notation-object-system
+      - name: Apply guarded notation patch
+        run: python3 tools/apply-notation-object-system.py
+      - name: Check embedded JavaScript syntax
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          text = Path('index.html').read_text(encoding='utf-8')
+          blocks = re.findall(r'<script[^>]*>([\s\S]*?)</script>', text)
+          if not blocks:
+              raise SystemExit('No embedded JavaScript found')
+          Path('/tmp/legato-notation-objects.js').write_text('\n'.join(blocks), encoding='utf-8')
+          PY
+          node --check /tmp/legato-notation-objects.js
+      - name: Verify notation and controller guards
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          t = Path('index.html').read_text(encoding='utf-8')
+          required = [
+            '20260727-notation-objects-1',
+            "'scoreEvents', 'scoreSpans'",
+            'beginScoreSpan(type, name, glyph, editing)',
+            'finishScoreSpan(anchor)',
+            'placeScoreEvent(type, name, glyph, value, options)',
+            'clefAt(staff, pos, state)',
+            'keyAt(pos, state)',
+            'tempoAt(pos, state)',
+            'secondsBetween(start, end, state)',
+            'scoreEvents: (s.scoreEvents || []).map',
+            'scoreSpans: (() =>',
+            'Add musical notation at the cursor',
+            "button4: 'previous-zone', button5: 'next-zone'",
+            'const BUMPER_COMBO_MS = 120;',
+            "case 'previous-zone': if (s.zone === 3 && s.selId) { this.nudgeAccidental(-1); break; } this.cycleVisibleZone(-1); break;",
+            "case 'next-zone': if (s.zone === 3 && s.selId) { this.nudgeAccidental(1); break; } this.cycleVisibleZone(1); break;"
+          ]
+          for marker in required:
+              if marker not in t:
+                  raise SystemExit('Missing marker: ' + marker)
+          print('Notation object and protected controller guards passed')
+          PY
+      - name: Commit repaired app
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet || git commit -m "Add arbitrary-position notation objects"
+          git push origin HEAD:fix/notation-object-system
