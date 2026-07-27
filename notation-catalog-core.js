@@ -45,16 +45,17 @@
 
   function classify(meta, name, glyph) {
     const m = Object.assign({}, meta || {}), t = textOf(m, name);
+    const commandName = String(name || m.label || m.id || "").trim().toLowerCase();
     let kind = String(m.kind || "glyph").toLowerCase();
     let placement = String(m.placement || "").toLowerCase();
     let band = "above", role = "event";
 
     if (/controlbeginbeam/.test(t)) { kind = "beam-control"; placement = "note"; role = "beam-join"; }
     else if (/controlendbeam/.test(t)) { kind = "beam-control"; placement = "note"; role = "beam-break"; }
-    else if (/stem up|stemup/.test(t)) { kind = "stem-direction"; placement = "note"; role = "stem-up"; }
-    else if (/stem down|stemdown/.test(t)) { kind = "stem-direction"; placement = "note"; role = "stem-down"; }
-    else if (/automatic stem|stem auto|stemauto/.test(t)) { kind = "stem-direction"; placement = "note"; role = "stem-auto"; }
-    else if (/notehead|note head|percussion note/.test(t)) { kind = /percussion/.test(t) ? "percussion" : "notehead"; placement = "note"; role = "replacement"; }
+    else if (/^(stem up|stemup)$/.test(commandName)) { kind = "stem-direction"; placement = "note"; role = "stem-up"; }
+    else if (/^(stem down|stemdown)$/.test(commandName)) { kind = "stem-direction"; placement = "note"; role = "stem-down"; }
+    else if (/^(automatic stem|stem auto|stemauto)$/.test(commandName)) { kind = "stem-direction"; placement = "note"; role = "stem-auto"; }
+    else if (/notehead|note head/.test(t) || /percussion note/.test(commandName)) { kind = /percussion/.test(t) ? "percussion" : "notehead"; placement = "note"; role = "replacement"; }
     else if (kind === "accidental" || /(^|[^a-z])accidental/.test(t) || /range accidentals|accidentals and microtones/.test(t)) { kind = "accidental"; placement = "note"; role = "replacement"; }
     else if (/fingering|string number|fret|hand sign|solf[eè]ge/.test(t)) { kind = "note-mark"; placement = "note"; role = "stack"; }
     else if (/articulation|staccat|tenuto|accent|marcato|bowing/.test(t)) { kind = "articulation"; placement = "note"; role = "stack"; }
