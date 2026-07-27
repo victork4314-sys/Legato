@@ -2,13 +2,16 @@ node:internal/modules/run_main:123
     triggerUncaughtException(
     ^
 
-AssertionError [ERR_ASSERTION]: harmonicHead semantic example must exist
-    at file:///home/runner/work/Legato/Legato/tools/.generated-smufl-semantic-corrections-v4.mjs?v=1785191303074:80:10 {
+AssertionError [ERR_ASSERTION]: octave clef must transpose playback by one octave
+
+-9 !== 12
+
+    at file:///home/runner/work/Legato/Legato/tools/.generated-smufl-semantic-corrections-v4.mjs?v=1785191414781:167:8 {
   generatedMessage: false,
   code: 'ERR_ASSERTION',
-  actual: undefined,
-  expected: true,
-  operator: '==',
+  actual: -9,
+  expected: 12,
+  operator: 'strictEqual',
   diff: 'simple'
 }
 
