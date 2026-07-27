@@ -93,7 +93,7 @@ jobs:
             'Add musical notation at the cursor',
             "kb: 'scoreText'",
             'tempo changes and position-aware pitches included',
-            "if (s.spanDraft) { this.finishScoreSpan(); break; }",
+            "if (s.spanDraft && action === 'confirm') return this.finishScoreSpan();",
             "button4: 'previous-zone', button5: 'next-zone'",
             'const BUMPER_COMBO_MS = 120;',
             "case 'previous-zone': if (s.zone === 3 && s.selId) { this.nudgeAccidental(-1); break; } this.cycleVisibleZone(-1); break;",
