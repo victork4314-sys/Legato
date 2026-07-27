@@ -1,0 +1,55 @@
+name: Catalog audit and build tag
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "notation-catalog-*.js"
+      - "cache-refresh.js"
+      - "smufl-catalog.js"
+      - "tests/catalog-audit.test.js"
+      - ".github/workflows/catalog-audit-and-build.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  audit-and-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check patch syntax
+        run: |
+          node --check notation-catalog-core.js
+          node --check notation-catalog-placement.js
+          node --check notation-catalog-render-audio.js
+          node --check cache-refresh.js
+      - name: Audit every catalog entry
+        run: node tests/catalog-audit.test.js
+      - name: Update deployed build tag
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path("index.html")
+          s = p.read_text()
+          old = "20260727-complete-smufl-playback-1"
+          new = "20260728-catalog-audit-1"
+          s = s.replace(old, new)
+          p.write_text(s)
+          PY
+      - name: Commit build tag when needed
+        run: |
+          if git diff --quiet -- index.html; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Refresh deployed catalog audit build"
+          git push origin HEAD:main
