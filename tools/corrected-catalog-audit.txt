@@ -1,0 +1,7 @@
+PASS: glyph count
+PASS: range count
+PASS: catalog length
+PASS: control and text glyphs silent
+PASS: grace notes are not trills
+PASS: cluster noteheads are not harmonics
+AUDIT FAILED: performance semantic kinds audible: ['articLaissezVibrerAbove', 'articLaissezVibrerBelow', 'chantAugmentum', 'chantCirculusAbove', 'chantCirculusBelow', 'chantEpisema', 'chantIctusAbove', 'chantIctusBelow', 'chantSemicirculusAbove', 'chantSemicirculusBelow']
