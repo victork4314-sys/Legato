@@ -1358,7 +1358,7 @@ class Component extends DCLogic {
       if (zone === 1) return !!el.closest('[data-scroll="players"]');
       if (zone === 2) return !!el.closest('[data-scroll="toolbar"]');
       if (zone === 4) return !!el.closest('[data-scroll="props"]');
-      if (zone === 0) return !el.closest('[data-scroll="players"],[data-scroll="toolbar"],[data-scroll="props"]') && el.getBoundingClientRect().top < 125;
+      if (zone === 0) return el.getAttribute('data-score-editor-shell') === 'true' || (!el.closest('[data-scroll="players"],[data-scroll="toolbar"],[data-scroll="props"]') && el.getBoundingClientRect().top < 125);
       return false;
     });
   }
@@ -1893,6 +1893,7 @@ class Component extends DCLogic {
       if (action === 'delete' || action === 'project-menu' || action === 'command-halo') return this.setState({ menu: false, spoken: 'File menu closed' });
       return;
     }
+    if (s.tieFrom && action === 'delete') return this.setState({ tieFrom: null, spoken: 'Tie cancelled' });
     if (s.zone !== 3 && !s.ptrOn) {
       if (action === 'move-up') return this.moveFocus(-1);
       if (action === 'move-down') return this.moveFocus(1);
@@ -1916,7 +1917,15 @@ class Component extends DCLogic {
       case 'move-down': P ? this.movePointer(0, 22) : this.movePitch(-1); break;
       case 'move-left': P ? this.movePointer(-22, 0) : this.movePos(-1); break;
       case 'move-right': P ? this.movePointer(22, 0) : this.movePos(1); break;
-      case 'confirm': P ? this.clickPointer() : this.enterNote(); break;
+      case 'confirm':
+        if (P) { this.clickPointer(); break; }
+        if (s.tieFrom) {
+          const target = this.selected();
+          if (target && target.id !== s.tieFrom) this.finishTie(target);
+          else this.setState({ spoken: 'Tie point two is waiting for A — move to the immediately following note of the same pitch' });
+          break;
+        }
+        this.enterNote(); break;
       case 'delete': {
         if (!s.range && this.selected()) { this.removeChordNote(); break; }
         this.deleteSelection();
@@ -3857,7 +3866,7 @@ class Component extends DCLogic {
       layerName: s.radial ? 'RT' : 'BASE',
       zoneName: ['Modes', 'Players', 'Toolbar', 'Score', 'Properties'][s.zone],
       zoneHint: s.zone === 3 ? 'STICK OR D-PAD MOVES THE CURSOR' : 'STICK OR D-PAD MOVES THE HIGHLIGHT · A PICKS',
-      selectionCount: s.selId ? 'NOTE SELECTED' : 'CURSOR',
+      selectionCount: s.tieFrom ? 'CHOOSE TIE END' : (s.selId ? 'NOTE SELECTED' : 'CURSOR'),
       cursorPitch: this.pitchName(s.step, s.staff),
       cursorReadout: 'BAR ' + (Math.floor(s.pos / this.barCapacity()) + 1) + ' · BEAT ' + (s.pos % this.barCapacity() + 1).toFixed(2) + ' · ' + STAVES[s.staff].name.toUpperCase(),
       durGlyph: DURS[s.dur].glyph,
@@ -3973,7 +3982,7 @@ class Component extends DCLogic {
         : 'display:none;',
       paperStyle: 'width: ' + (s.layout === 'page' ? ((s.eng && s.eng.pageW) || 1120) : Math.max(1120, Math.round(noteStart + s.bars * this.barCapacity() * XS + 150))) + 'px; margin: 0 auto; background: var(--paper); border-radius: 3px; box-shadow: 0 24px 60px rgba(0,0,0,.55), 0 0 0 1px var(--border-strong); padding: 16px 0 20px; position: relative; transform: scale(' + (s.staffSize / 100) + '); transform-origin: top center;',
       title: s.title,
-      titleStyle: 'font-family:\'Source Serif 4\',Georgia,serif;font-size:22px;font-weight:600;color:var(--ink);letter-spacing:.005em;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;cursor:pointer;padding:2px 8px;',
+      titleStyle: 'font-family:var(--score-font);font-size:22px;font-weight:600;color:var(--ink);letter-spacing:.005em;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;cursor:pointer;padding:2px 8px;',
       composer: s.composer,
       keyName: KEYS[s.keyIdx].name,
       meterName: METERS[s.meter],
