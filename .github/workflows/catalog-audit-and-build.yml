@@ -1,10 +1,12 @@
-name: Catalog audit and build tag
+name: Catalog audit and build manifest
 
 on:
   push:
     branches: [main]
     paths:
       - "notation-catalog-*.js"
+      - "notation-placement-*.js"
+      - "notation-semantic-fix.js"
       - "cache-refresh.js"
       - "smufl-catalog.js"
       - "tests/catalog-audit.test.js"
@@ -15,7 +17,7 @@ permissions:
   contents: write
 
 jobs:
-  audit-and-tag:
+  audit-and-publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,32 +26,43 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Check patch syntax
+      - name: Check every runtime patch
         run: |
+          node --check notation-placement-fix.js
+          node --check notation-placement-priority-fix.js
+          node --check notation-semantic-fix.js
           node --check notation-catalog-core.js
           node --check notation-catalog-placement.js
           node --check notation-catalog-render-audio.js
           node --check cache-refresh.js
+          node --check tests/catalog-audit.test.js
       - name: Audit every catalog entry
         run: node tests/catalog-audit.test.js
-      - name: Update deployed build tag
+      - name: Publish the tested build manifest
         run: |
           python - <<'PY'
+          import json
+          import os
           from pathlib import Path
-          p = Path("index.html")
-          s = p.read_text()
-          old = "20260727-complete-smufl-playback-1"
-          new = "20260728-catalog-audit-1"
-          s = s.replace(old, new)
-          p.write_text(s)
+
+          Path("legato-build.json").write_text(
+              json.dumps(
+                  {
+                      "version": os.environ["GITHUB_SHA"],
+                      "audited": True,
+                      "catalogEntries": 3451,
+                  },
+                  indent=2,
+              ) + "\n"
+          )
           PY
-      - name: Commit build tag when needed
+      - name: Commit the tested manifest when needed
         run: |
-          if git diff --quiet -- index.html; then
+          if git diff --quiet -- legato-build.json; then
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html
-          git commit -m "Refresh deployed catalog audit build"
+          git add legato-build.json
+          git commit -m "Publish audited Legato build ${GITHUB_SHA::12}"
           git push origin HEAD:main
