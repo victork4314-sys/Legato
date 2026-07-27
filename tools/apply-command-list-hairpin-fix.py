@@ -12,8 +12,9 @@ def replace_once(old: str, new: str, label: str) -> None:
     text = text.replace(old, new, 1)
 
 
-for label in ('build meta', 'cache refresh version', 'support version'):
-    replace_once('20260727-notation-objects-2', '20260727-command-list-hairpins-1', label)
+replace_once('<meta name="legato-build" content="20260727-notation-objects-2">', '<meta name="legato-build" content="20260727-command-list-hairpins-1">', 'build meta')
+replace_once('<script src="./cache-refresh.js?v=20260727-notation-objects-2"></script>', '<script src="./cache-refresh.js?v=20260727-command-list-hairpins-1"></script>', 'cache refresh version')
+replace_once('<script src="./support.js?v=20260727-notation-objects-2"></script>', '<script src="./support.js?v=20260727-command-list-hairpins-1"></script>', 'support version')
 
 replace_once("['Tempo text','Allegro']", "['Tempo change','♩ = 120']", 'tempo command label')
 replace_once("['Key signature','\\uE262\\uE260']", "['Key signature change','\\uE262\\uE260']", 'key command label')
