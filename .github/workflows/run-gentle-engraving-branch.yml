@@ -24,7 +24,17 @@ jobs:
         shell: bash
         run: |
           set +e
-          python3 .github/scripts/gentle_engraving_patch.py > repair-error.txt 2>&1
+          python3 - <<'PY' > repair-error.txt 2>&1
+          import re
+          import runpy
+          original_subn = re.subn
+          def literal_subn(pattern, replacement, string, count=0, flags=0):
+              if isinstance(replacement, str):
+                  return original_subn(pattern, lambda _match: replacement, string, count=count, flags=flags)
+              return original_subn(pattern, replacement, string, count=count, flags=flags)
+          re.subn = literal_subn
+          runpy.run_path('.github/scripts/gentle_engraving_patch.py', run_name='__main__')
+          PY
           code=$?
           set -e
           if [ "$code" -ne 0 ]; then
@@ -47,7 +57,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html
+          git add -A index.html repair-error.txt
           git diff --cached --check
           git commit -m "Repair engraving and add direct score editing"
           git push origin HEAD:fix/gentle-engraving-and-direct-editing
