@@ -5,6 +5,7 @@ on:
     paths:
       - index.html
       - tools/apply-notation-object-system.py
+      - tools/fix-notation-object-system.py
       - tools/test-notation-object-system.mjs
       - .github/workflows/apply-notation-object-system.yml
 permissions:
@@ -30,6 +31,8 @@ jobs:
           PY
       - name: Apply guarded notation patch
         run: python3 tools/apply-notation-object-system.py
+      - name: Apply lifecycle and export follow-ups
+        run: python3 tools/fix-notation-object-system.py
       - name: Check embedded JavaScript syntax
         run: |
           python3 - <<'PY'
@@ -48,7 +51,7 @@ jobs:
           from pathlib import Path
           t = Path('index.html').read_text(encoding='utf-8')
           required = [
-            '20260727-notation-objects-1',
+            '20260727-notation-objects-2',
             "'scoreEvents', 'scoreSpans'",
             'beginScoreSpan(type, name, glyph, editing)',
             'finishScoreSpan(anchor)',
@@ -60,6 +63,8 @@ jobs:
             'scoreEvents: (s.scoreEvents || []).map',
             'scoreSpans: (() =>',
             'Add musical notation at the cursor',
+            "kb: 'scoreText'",
+            'tempo changes and position-aware pitches included',
             "button4: 'previous-zone', button5: 'next-zone'",
             'const BUMPER_COMBO_MS = 120;',
             "case 'previous-zone': if (s.zone === 3 && s.selId) { this.nudgeAccidental(-1); break; } this.cycleVisibleZone(-1); break;",
@@ -68,7 +73,7 @@ jobs:
           for marker in required:
               if marker not in t:
                   raise SystemExit('Missing marker: ' + marker)
-          print('Notation object and protected controller guards passed')
+          print('Notation lifecycle, export and protected controller guards passed')
           PY
       - name: Install browser test runtime
         run: |
@@ -86,5 +91,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          git diff --cached --quiet || git commit -m "Add arbitrary-position notation objects"
+          git diff --cached --quiet || git commit -m "Complete arbitrary-position notation objects"
           git push origin HEAD:fix/notation-object-system
