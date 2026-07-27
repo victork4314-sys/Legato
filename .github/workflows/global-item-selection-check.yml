@@ -57,14 +57,12 @@ jobs:
             await page.addInitScript(() => localStorage.setItem('legato.tour.v1', '1'));
             await page.goto('http://127.0.0.1:4173/index.html', { waitUntil: 'domcontentloaded' });
             await page.waitForFunction(() => !!window.__legatoOwner, null, { timeout: 30000 });
-            const result = await page.evaluate(() => {
+            const result = await page.evaluate(async () => {
               const o = window.__legatoOwner;
-              const targets = o.autoScanTargets().filter(t => t.zone !== 3);
+              const seedTargets = o.autoScanTargets().filter(t => t.zone !== 3);
               const misses = [];
-              for (const t of targets) {
-                o.state.zone = t.zone;
-                o.state.mode = t.mode;
-                o.state.focus = t.focus;
+              for (const t of seedTargets) {
+                await new Promise(resolve => o.setState({ zone:t.zone, mode:t.mode, focus:t.focus }, () => requestAnimationFrame(resolve)));
                 o.syncGlobalSelection();
                 const picked = Array.from(document.querySelectorAll('[data-scan-selected="true"]'));
                 if (picked.length !== 1) misses.push({ target:t, count:picked.length });
@@ -73,9 +71,9 @@ jobs:
                   if (style.outlineStyle === 'none' || style.outlineWidth === '0px') misses.push({ target:t, noOutline:true });
                 }
               }
-              o.state.zone = 3;
+              await new Promise(resolve => o.setState({ zone:3 }, () => requestAnimationFrame(resolve)));
               o.syncGlobalSelection();
-              return { count:targets.length, misses, scoreSelected:document.querySelectorAll('[data-scan-selected="true"]').length };
+              return { count:seedTargets.length, misses, scoreSelected:document.querySelectorAll('[data-scan-selected="true"]').length };
             });
             assert(result.count > 40, 'too few targets: ' + result.count);
             assert(result.misses.length === 0, 'unhighlighted targets: ' + JSON.stringify(result.misses.slice(0,5)));
