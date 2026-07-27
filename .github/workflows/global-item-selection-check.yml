@@ -6,26 +6,21 @@ on:
       - .global-item-selection-trigger
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  patch-and-test:
+  test:
     if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
-          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - name: Apply guarded patch
-        run: python .github/scripts/patch_global_selection.py
-      - name: Verify exact scope and syntax
+      - name: Verify source and syntax
         run: |
-          git diff --check
-          git diff --name-only | grep -qx 'index.html'
           grep -q 'data-scan-selected' index.html
           ! grep -q 'box-shadow:inset 0 0 0 2px #74a12e' index.html
           python - <<'PY'
@@ -82,10 +77,3 @@ jobs:
             await browser.close();
           })().catch(e => { console.error(e); process.exit(1); });
           JS
-      - name: Commit verified patch
-        run: |
-          git config user.name "Legato maintenance"
-          git config user.email "actions@users.noreply.github.com"
-          git add index.html
-          git commit -m "Use one global item selection highlight"
-          git push origin HEAD:${{ github.head_ref }}
