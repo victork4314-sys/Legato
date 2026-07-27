@@ -22,7 +22,7 @@ replace_once(
 replace_once(
 "    (s.scoreEvents || []).filter(ev => ev.type === 'hold' && ev.p >= start - .0005 && ev.p < end - .0005 && ev.playback).forEach(ev => {",
 "    (s.scoreEvents || []).filter(ev => ev.type === 'electronic' && ev.p >= start - .0005 && ev.p < end - .0005 && ev.playback && ev.playback.electronic === 'pause').forEach(ev => { seconds += Math.max(0, Number(ev.playback.seconds) || 60 / this.pointTempoAt(ev.p, s)); });\n    (s.scoreEvents || []).filter(ev => ev.type === 'hold' && ev.p >= start - .0005 && ev.p < end - .0005 && ev.playback).forEach(ev => {",
-electronic pause timing')
+'electronic pause timing')
 
 required = [
     "effect === 'mute' || effect === 'stop'",
