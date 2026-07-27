@@ -6,9 +6,9 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="legato-build" content="20260727-notation-objects-1">
-<script src="./cache-refresh.js?v=20260727-notation-objects-1"></script>
-<script src="./support.js?v=20260727-notation-objects-1"></script>
+<meta name="legato-build" content="20260727-notation-objects-2">
+<script src="./cache-refresh.js?v=20260727-notation-objects-2"></script>
+<script src="./support.js?v=20260727-notation-objects-2"></script>
 </head>
 <body>
 <x-dc>
@@ -1682,7 +1682,7 @@ class Component extends DCLogic {
     if (obj.object === 'span' || obj.p1 != null) { this.beginScoreSpan(obj.type, obj.name, obj.glyph, obj.id); return true; }
     if (/^(clef|key|meter|tempo)$/.test(obj.type)) { this.openScoreEventPanel(obj.type, obj.name, obj.glyph, obj.id); return true; }
     if (/^(text|staff-text|system-text|technique|rehearsal)$/.test(obj.type)) {
-      this.setState({ kb: 'scoreObjectText', kbIdx: 0, scoreText: obj.text || obj.name || '', editingScoreObject: obj.id, spoken: 'Edit ' + obj.name + ' text' });
+      this.setState({ kb: 'scoreText', kbIdx: 0, scoreText: obj.text || obj.name || '', editingScoreObject: obj.id, spoken: 'Edit ' + obj.name + ' text' });
       return true;
     }
     this.setState({ spoken: obj.name + ' selected — arrows move it, B deletes' });
@@ -2751,8 +2751,8 @@ class Component extends DCLogic {
       // your work comes straight back — no prompt to miss or dismiss by accident
       this._restoring = true;
       if (snap.doc.players) syncStaves(snap.doc.players);
-      this.setState(Object.assign({}, snap.doc, {
-        selId: null, recovery: null,
+      this.setState(Object.assign({ scoreEvents: [], scoreSpans: [] }, snap.doc, {
+        selId: null, scoreObjectId: null, spanDraft: null, recovery: null,
         saveState: 'Reopened your score from ' + new Date(snap.at).toLocaleString(),
         spoken: 'Your score was reopened where you left off — File, New score starts fresh'
       }), () => {
@@ -2796,7 +2796,7 @@ class Component extends DCLogic {
         const data = JSON.parse(r.result);
         if (!data || !data.doc || !Array.isArray(data.doc.notes)) throw new Error('not a Legato project');
         this._restoring = true;
-        this.setState(Object.assign({}, data.doc, { selId: null, spoken: 'Opened ' + file.name }), () => { this._prevDocStr = JSON.stringify(this.doc()); this._restoring = false; });
+        this.setState(Object.assign({ scoreEvents: [], scoreSpans: [] }, data.doc, { selId: null, scoreObjectId: null, spanDraft: null, spoken: 'Opened ' + file.name }), () => { this._prevDocStr = JSON.stringify(this.doc()); this._restoring = false; });
       } catch (e) {
         this.rumble('edge');
         this.setState({ spoken: 'That file could not be opened — your score is unchanged' });
@@ -2809,7 +2809,7 @@ class Component extends DCLogic {
     try { localStorage.removeItem(STORE); } catch (e) {}
     this._undo = []; this._redo = [];
     this.setState({
-      notes: [], selId: null, title: 'Untitled score', composer: '', keyIdx: 0, meter: 0, tempo: 100,
+      notes: [], scoreEvents: [], scoreSpans: [], selId: null, scoreObjectId: null, spanDraft: null, title: 'Untitled score', composer: '', keyIdx: 0, meter: 0, tempo: 100,
       clefOctaves: (this.state.players || DEFAULT_PLAYERS).map(() => 0),
       pos: 0, step: 6, staff: 0, bars: 4, voice: 1, entry: 'note', grid: 0, dots: 0,
       armed: {}, range: null, measureMarks: {}, playPos: 0, playing: false,
@@ -2931,29 +2931,34 @@ class Component extends DCLogic {
     const str = t => t.split('').map(c => c.charCodeAt(0) & 127);
     const chunk = (id, data) => str(id).concat([(data.length >> 24) & 255, (data.length >> 16) & 255, (data.length >> 8) & 255, data.length & 255], data);
     const tracks = [];
-    const us = Math.round(60000000 / s.tempo);
-    tracks.push(chunk('MTrk', [0, 255, 81, 3, (us >> 16) & 255, (us >> 8) & 255, us & 255].concat(vlq(0), [255, 47, 0])));
+    const tempoEvents = [{ p: 0, value: s.tempo }].concat((s.scoreEvents || []).filter(x => x.type === 'tempo')).sort((a, b) => a.p - b.p);
+    let tempoData = [], tempoLast = 0;
+    tempoEvents.forEach(ev => {
+      const tick = Math.max(0, Math.round(ev.p * PPQ)), us = Math.round(60000000 / Math.max(20, Number(ev.value) || s.tempo));
+      tempoData = tempoData.concat(vlq(tick - tempoLast), [255, 81, 3, (us >> 16) & 255, (us >> 8) & 255, us & 255]); tempoLast = tick;
+    });
+    tempoData = tempoData.concat(vlq(0), [255, 47, 0]);
+    tracks.push(chunk('MTrk', tempoData));
     STAVES.forEach((st, i) => {
       const events = [];
       s.notes.filter(n => n.s === i && !n.rest).forEach(n => {
-        const beats = (DURS.find(d => d.id === n.d) || DURS[2]).beats;
-        const on = Math.round(n.p * PPQ), off = Math.round((n.p + beats * .96) * PPQ);
-        const midi = midiFor(n.step, s.clefs[i] === 'bass', n.acc, KEYS[s.keyIdx], (s.clefOctaves || [])[i]);
-        events.push({ t: on, d: [144 + Math.min(15, i), midi, n.art === '\uE4A0' ? 108 : 88] });
-        events.push({ t: off, d: [128 + Math.min(15, i), midi, 0] });
+        const beats = noteBeats(n), on = Math.round(n.p * PPQ), off = Math.round((n.p + beats * .96) * PPQ);
+        const clef = this.clefAt(i, n.p, s), key = this.keyAt(n.p, s), oct = this.activeScoreSpan(['octave-up', 'octave-down', 'octave-up-2', 'octave-down-2'], i, n.p, s);
+        let midi = midiFor(n.step, clef === 'bass', n.acc, key, (s.clefOctaves || [])[i]);
+        if (oct) midi += oct.type === 'octave-up' ? 12 : oct.type === 'octave-down' ? -12 : oct.type === 'octave-up-2' ? 24 : -24;
+        events.push({ t: on, d: [144 + Math.min(15, i), Math.max(0, Math.min(127, midi)), n.art === '\uE4A0' ? 108 : 88] });
+        events.push({ t: off, d: [128 + Math.min(15, i), Math.max(0, Math.min(127, midi)), 0] });
       });
       events.sort((a, b) => a.t - b.t);
-      let last = 0, data = str('') ;
-      data = data.concat(vlq(0), [255, 3, st.name.length].concat(str(st.name)));
+      let last = 0, data = vlq(0).concat([255, 3, st.name.length], str(st.name));
       events.forEach(ev => { data = data.concat(vlq(ev.t - last), ev.d); last = ev.t; });
       data = data.concat(vlq(0), [255, 47, 0]);
       tracks.push(chunk('MTrk', data));
     });
     const header = chunk('MThd', [0, 1, 0, tracks.length, (PPQ >> 8) & 255, PPQ & 255]);
-    let all = header;
-    tracks.forEach(t => { all = all.concat(t); });
+    let all = header; tracks.forEach(track => { all = all.concat(track); });
     this.download(this.fileBase() + '.mid', 'audio/midi', new Uint8Array(all));
-    this.setState({ spoken: 'MIDI exported — ' + STAVES.length + ' tracks' });
+    this.setState({ spoken: 'MIDI exported — tempo changes and position-aware pitches included' });
   }
   runOp(name) {
     this.setState({ menu: false });
@@ -2966,8 +2971,9 @@ class Component extends DCLogic {
       'Add measure': () => this.setState(s => ({ bars: Math.min(64, s.bars + 1), spoken: 'Measure added — ' + Math.min(64, s.bars + 1) + ' bars' })),
       'Remove last measure': () => this.setState(s => {
         if (s.bars <= 1) return { spoken: 'A part must keep at least one measure' };
-        const keep = s.notes.filter(n => n.p < (s.bars - 1) * this.barCapacity());
-        return { bars: s.bars - 1, notes: keep, selId: null, spoken: 'Last measure removed' };
+        const end = (s.bars - 1) * this.barCapacity();
+        const keep = s.notes.filter(n => n.p < end);
+        return { bars: s.bars - 1, notes: keep, scoreEvents: (s.scoreEvents || []).filter(x => x.p < end), scoreSpans: (s.scoreSpans || []).filter(x => Math.min(x.p1, x.p2) < end).map(x => Object.assign({}, x, { p1: Math.min(x.p1, end - .001), p2: Math.min(x.p2, end - .001) })), selId: null, scoreObjectId: null, spanDraft: null, spoken: 'Last measure removed' };
       }),
       'Page and staff layout': () => this.setState({ spoken: 'Layout settings live in the Engrave mode' }),
       'Load sampled instrument': () => this.openPicker(),
@@ -2990,7 +2996,7 @@ class Component extends DCLogic {
     const g = n.orn, staff = n.s, v = Math.min(127, vel * 1.08);
     const when = when0 + .004;                       // clear of the main attack, so nothing is deduped away
     // diatonic neighbours in the current key, so trills and turns are theoretically right
-    const K = KEYS[this.state.keyIdx] || KEYS[0];
+    const K = this.keyAt(n.p == null ? this.state.pos : n.p) || KEYS[0];
     const scale = K.scale || [0, 2, 4, 5, 7, 9, 11];
     const inKey = mm => { const pc = ((mm % 12) + 12) % 12; return scale.indexOf(pc) >= 0; };
     const upStep = (() => { for (let k = 1; k <= 2; k++) if (inKey(m + k)) return k; return 2; })();
@@ -3177,6 +3183,7 @@ class Component extends DCLogic {
       if (s.players.length <= 1) return { spoken: 'A score needs at least one player' };
       const players = s.players.filter((p, j) => j !== i);
       syncStaves(players);
+      const shift = x => x > i ? x - 1 : x;
       return {
         players: players,
         clefs: s.clefs.filter((c, j) => j !== i),
@@ -3184,8 +3191,10 @@ class Component extends DCLogic {
         instruments: s.instruments.filter((c, j) => j !== i),
         mix: s.mix.filter((c, j) => j !== i),
         notes: s.notes.filter(n => n.s !== i).map(n => n.s > i ? Object.assign({}, n, { s: n.s - 1 }) : n),
+        scoreEvents: (s.scoreEvents || []).filter(x => x.system || x.s !== i).map(x => x.system ? x : Object.assign({}, x, { s: shift(x.s) })),
+        scoreSpans: (s.scoreSpans || []).filter(x => x.system || (x.s1 !== i && x.s2 !== i)).map(x => x.system ? x : Object.assign({}, x, { s1: shift(x.s1), s2: shift(x.s2) })),
         staff: Math.max(0, Math.min(players.length - 1, s.staff > i ? s.staff - 1 : s.staff)),
-        selId: null,
+        selId: null, scoreObjectId: null, spanDraft: null,
         spoken: (s.players[i] ? s.players[i].name : 'Player') + ' removed'
       };
     });
@@ -3206,6 +3215,8 @@ class Component extends DCLogic {
         instruments: s.instruments.slice(0, i + 1).concat([s.instruments[i]], s.instruments.slice(i + 1)),
         mix: s.mix.slice(0, i + 1).concat([{ vol: 80, pan: 0, mute: false, solo: false }], s.mix.slice(i + 1)),
         notes: s.notes.map(n => n.s > i ? Object.assign({}, n, { s: n.s + 1 }) : n),
+        scoreEvents: (s.scoreEvents || []).map(x => !x.system && x.s > i ? Object.assign({}, x, { s: x.s + 1 }) : x),
+        scoreSpans: (s.scoreSpans || []).map(x => x.system ? x : Object.assign({}, x, { s1: x.s1 > i ? x.s1 + 1 : x.s1, s2: x.s2 > i ? x.s2 + 1 : x.s2 })),
         spoken: 'Second staff added to ' + src.name
       };
     });
@@ -3254,7 +3265,7 @@ class Component extends DCLogic {
   }
   kbType() {
     const s = this.state, k = KB_KEYS[s.kbIdx];
-    if (k === 'DONE') { if (s.kb === 'scoreObjectText') return this.finishScoreObjectText(); return this.setState({ kb: null, spoken: s.kb + ' saved' }); }
+    if (k === 'DONE') { if (s.kb === 'scoreText') return this.finishScoreObjectText(); return this.setState({ kb: null, spoken: s.kb + ' saved' }); }
     if (k === 'DEL') return this.setState(p => Object.assign({ spoken: 'Deleted' }, { [p.kb]: p[p.kb].slice(0, -1) }));
     const ch = k === 'SPACE' ? ' ' : (s.kbShift ? k.toUpperCase() : k);
     this.setState(p => Object.assign({ spoken: ch === ' ' ? 'Space' : ch, kbShift: false }, { [p.kb]: p[p.kb] + ch }));
@@ -4646,7 +4657,7 @@ class Component extends DCLogic {
           else if (sp.type.indexOf('hairpin') === 0) { top = st1.top + 65; h = 22; const up = sp.type !== 'hairpin-down'; const swell = sp.type === 'hairpin-swell'; line1 = base + 'top:10px;width:' + (swell ? width / 2 : width) + 'px;height:1.5px;background:' + accent2 + ';transform:rotate(' + (up ? -7 : 7) + 'deg);'; line2 = base + 'top:10px;width:' + (swell ? width / 2 : width) + 'px;height:1.5px;background:' + accent2 + ';transform:rotate(' + (up ? 7 : -7) + 'deg);' + (swell ? 'left:' + width / 2 + 'px;' : ''); }
           else if (sp.type === 'pedal') { top = st1.top + 72; h = 22; label = 'Ped.'; end = '✱'; line1 = base + 'left:28px;top:10px;width:' + Math.max(8, width - 38) + 'px;border-top:1.5px solid ' + accent2 + ';'; }
           else if (sp.type.indexOf('octave-') === 0) { top = st1.top - 45; h = 25; label = sp.type === 'octave-up' ? '8va' : sp.type === 'octave-down' ? '8vb' : sp.type === 'octave-up-2' ? '15ma' : '15mb'; line1 = base + 'left:30px;top:10px;width:' + Math.max(8, width - 30) + 'px;border-top:1.5px dashed ' + accent2 + ';'; end = '⌟'; }
-          else if (sp.type === 'gliss' || sp.type === 'portamento') { const y1 = st1.top + 48 - (sp.step1 || 6) * 6, y2 = st2.top + 48 - (sp.step2 || 6) * 6, dy = y2 - y1; top = Math.min(y1, y2) - 6; h = Math.abs(dy) + 16; const angle = Math.atan2(dy, width) * 180 / Math.PI; label = sp.type === 'gliss' ? 'gliss.' : 'port.'; line1 = base + 'top:' + (y1 - top) + 'px;width:' + width + 'px;border-top:1.5px ' + (sp.type === 'gliss' ? 'wavy' : 'solid') + ' ' + accent2 + ';transform:rotate(' + angle + 'deg);'; }
+          else if (sp.type === 'gliss' || sp.type === 'portamento') { const y1 = st1.top + 48 - (sp.step1 || 6) * 6, y2 = st2.top + 48 - (sp.step2 || 6) * 6, dy = y2 - y1; top = Math.min(y1, y2) - 6; h = Math.abs(dy) + 16; const angle = Math.atan2(dy, width) * 180 / Math.PI; label = sp.type === 'gliss' ? 'gliss.' : 'port.'; line1 = base + 'top:' + (y1 - top) + 'px;width:' + width + 'px;border-top:1.5px solid ' + accent2 + ';transform:rotate(' + angle + 'deg);'; }
           else if (sp.type === 'trill-line') { top = st1.top - 40; h = 24; label = 'tr'; line1 = base + 'left:20px;top:10px;width:' + Math.max(8, width - 20) + 'px;border-top:2px wavy ' + accent2 + ';'; }
           else if (sp.type === 'tempo-down' || sp.type === 'tempo-up') { const first = STAVES.find(x => !x.hidden) || STAVES[0]; top = first.top - 58; h = 26; label = sp.name || (sp.type === 'tempo-up' ? 'accel.' : 'rit.'); line1 = base + 'left:34px;top:12px;width:' + Math.max(8, width - 34) + 'px;border-top:1.5px dashed ' + accent2 + ';'; }
           else if (sp.type === 'ending') { const first = STAVES.find(x => !x.hidden) || STAVES[0]; top = first.top - 72; h = 24; label = /^Second/.test(sp.name) ? '2.' : '1.'; line1 = base + 'top:8px;width:' + width + 'px;border-top:1.5px solid ' + accent2 + ';border-left:1.5px solid ' + accent2 + ';height:12px;'; }
