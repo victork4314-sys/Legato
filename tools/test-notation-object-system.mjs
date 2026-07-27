@@ -97,9 +97,39 @@ const beforeConfirm = await page.evaluate(() => {
   return { draft: !!o.state.spanDraft, zone: o.state.zone, ptrOn: o.state.ptrOn, kb: o.state.kb, panel: o.state.panel, hub: o.state.hub, halo: o.state.halo };
 });
 assert.deepEqual(beforeConfirm, { draft: true, zone: 3, ptrOn: false, kb: null, panel: null, hub: false, halo: false }, 'controller span confirmation should begin from a clean score-editing state');
+await page.evaluate(() => {
+  const o = window.__legatoOwner;
+  const original = o.finishScoreSpan.bind(o);
+  window.__spanFinishTrace = { calls: 0, before: null, afterSync: null, result: null };
+  o.finishScoreSpan = (...args) => {
+    window.__spanFinishTrace.calls += 1;
+    window.__spanFinishTrace.before = {
+      draft: o.state.spanDraft ? { id: o.state.spanDraft.id, p1: o.state.spanDraft.p1, s1: o.state.spanDraft.s1 } : null,
+      spans: (o.state.scoreSpans || []).length,
+      pos: o.state.pos,
+      staff: o.state.staff,
+      step: o.state.step
+    };
+    const result = original(...args);
+    window.__spanFinishTrace.result = result;
+    window.__spanFinishTrace.afterSync = {
+      draft: o.state.spanDraft ? { id: o.state.spanDraft.id, p1: o.state.spanDraft.p1, s1: o.state.spanDraft.s1 } : null,
+      spans: (o.state.scoreSpans || []).length,
+      object: o.state.scoreObjectId,
+      spoken: o.state.spoken
+    };
+    return result;
+  };
+  window.__restoreFinishScoreSpan = () => { o.finishScoreSpan = original; };
+});
 await page.evaluate(() => window.__legatoOwner.dispatch('confirm', 'press'));
-await page.waitForTimeout(100);
+await page.waitForTimeout(160);
 let snap = await state();
+const spanTrace = await page.evaluate(() => ({ trace: window.__spanFinishTrace, state: { draft: window.__legatoOwner.state.spanDraft, spans: window.__legatoOwner.state.scoreSpans, object: window.__legatoOwner.state.scoreObjectId, spoken: window.__legatoOwner.state.spoken, mod: !!window.__legatoOwner._mod } }));
+console.log('Span confirm trace', JSON.stringify(spanTrace));
+await page.evaluate(() => window.__restoreFinishScoreSpan());
+assert.equal(spanTrace.trace.calls, 1, 'controller A should call finishScoreSpan exactly once');
+assert.equal(spanTrace.trace.result, true, 'finishScoreSpan should accept the live draft');
 assert.equal(snap.spans.length, 1, 'controller A should finish a saved slur span');
 assert.equal(snap.spans[0].p1, 0.5);
 assert.equal(snap.spans[0].p2, 3);
