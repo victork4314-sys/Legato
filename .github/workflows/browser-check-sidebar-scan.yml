@@ -1,0 +1,122 @@
+name: Browser check sidebar and scan update
+
+on:
+  pull_request:
+    paths:
+      - index.html
+      - .legato-sidebar-scan-trigger
+
+permissions:
+  contents: read
+
+jobs:
+  browser-check:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Check embedded JavaScript syntax
+        shell: bash
+        run: |
+          python - <<'PY'
+          import re
+          from pathlib import Path
+          text = Path('index.html').read_text(encoding='utf-8')
+          matches = re.findall(r'<script\s+data-dc-script[^>]*>(.*?)</script>', text, re.S)
+          if len(matches) != 1:
+              raise SystemExit(f'expected one data-dc-script block, found {len(matches)}')
+          Path('/tmp/legato-logic.js').write_text(matches[0], encoding='utf-8')
+          PY
+          node --check /tmp/legato-logic.js
+      - name: Install browser test runtime
+        run: |
+          npm install --no-save playwright@1.54.1
+          npx playwright install --with-deps chromium
+      - name: Run live interaction checks
+        shell: bash
+        run: |
+          python -m http.server 4173 >/tmp/legato-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID || true' EXIT
+          node - <<'JS'
+          const { chromium } = require('playwright');
+          const assert = (value, message) => { if (!value) throw new Error(message); };
+          (async () => {
+            const browser = await chromium.launch({ headless: true });
+            const page = await browser.newPage({ viewport: { width: 1600, height: 1000 } });
+            const pageErrors = [];
+            page.on('pageerror', error => pageErrors.push(String(error)));
+            await page.addInitScript(() => localStorage.setItem('legato.tour.v1', '1'));
+            await page.goto('http://127.0.0.1:4173/index.html', { waitUntil: 'domcontentloaded' });
+            await page.waitForFunction(() => !!window.__legatoOwner, null, { timeout: 30000 });
+
+            const initial = await page.evaluate(() => ({
+              faceStripPresent: document.body.textContent.includes('D-PAD MOVES · LB/RB CHANGES PANEL'),
+              noteToolbarPresent: !!document.querySelector('[data-ptr="Note or rest entry"]'),
+              sidebarsHidden: window.__legatoOwner.state.sidebarsHidden,
+              autoScan: window.__legatoOwner.state.autoScan
+            }));
+            assert(!initial.faceStripPresent, 'final face-button controls strip still exists');
+            assert(initial.noteToolbarPresent, 'note toolbar was removed or damaged');
+            assert(initial.sidebarsHidden === false, 'sidebars should start visible');
+            assert(initial.autoScan === false, 'auto scan should start off');
+
+            await page.getByText('HIDE SIDEBARS', { exact: true }).click();
+            await page.waitForFunction(() => window.__legatoOwner.state.sidebarsHidden === true);
+            const hidden = await page.evaluate(() => {
+              const vals = window.__legatoOwner.renderVals();
+              return {
+                zones: window.__legatoOwner.visibleZones(),
+                left: vals.leftZoneStyle,
+                right: vals.rightZoneStyle,
+                grid: vals.workspaceStyle,
+                label: vals.sidebarsLabel
+              };
+            });
+            assert(JSON.stringify(hidden.zones) === JSON.stringify([0, 2, 3]), 'hidden scan zones are not Modes, Toolbar, Score only');
+            assert(hidden.left.includes('display:none'), 'left sidebar did not hide');
+            assert(hidden.right.includes('display:none'), 'right sidebar did not hide');
+            assert(hidden.grid.includes('minmax(0,1fr)') && !hidden.grid.includes('224px'), 'workspace did not expand to one column');
+            assert(hidden.label === 'SHOW SIDEBARS', 'button did not change to Show Sidebars');
+
+            await page.getByText('SHOW SIDEBARS', { exact: true }).click();
+            await page.waitForFunction(() => window.__legatoOwner.state.sidebarsHidden === false);
+            const shown = await page.evaluate(() => {
+              const vals = window.__legatoOwner.renderVals();
+              return { zones: window.__legatoOwner.visibleZones(), left: vals.leftZoneStyle, right: vals.rightZoneStyle, grid: vals.workspaceStyle };
+            });
+            assert(JSON.stringify(shown.zones) === JSON.stringify([0, 1, 2, 3, 4]), 'shown scan zones did not restore all five zones');
+            assert(!shown.left.includes('display:none'), 'left sidebar did not return');
+            assert(!shown.right.includes('display:none'), 'right sidebar did not return');
+            assert(shown.grid.includes('224px') && shown.grid.includes('296px'), 'three-column workspace did not return');
+
+            await page.getByText('AUTO SCAN', { exact: true }).click();
+            await page.waitForFunction(() => window.__legatoOwner.state.autoScan === true);
+            const beforeTick = await page.evaluate(() => ({ zone: window.__legatoOwner.state.zone, focus: window.__legatoOwner.state.focus }));
+            await page.waitForTimeout(1500);
+            const afterTick = await page.evaluate(() => ({ zone: window.__legatoOwner.state.zone, focus: window.__legatoOwner.state.focus }));
+            assert(beforeTick.zone !== afterTick.zone || beforeTick.focus !== afterTick.focus, 'auto scan did not advance');
+
+            await page.getByText('HIDE SIDEBARS', { exact: true }).click();
+            await page.waitForFunction(() => window.__legatoOwner.state.sidebarsHidden === true);
+            const visited = [];
+            for (let i = 0; i < 14; i += 1) {
+              visited.push(await page.evaluate(() => window.__legatoOwner.state.zone));
+              await page.waitForTimeout(350);
+            }
+            assert(!visited.includes(1) && !visited.includes(4), 'auto scan entered a hidden sidebar zone: ' + visited.join(','));
+
+            await page.getByText('AUTO SCAN ON', { exact: true }).click();
+            await page.waitForFunction(() => window.__legatoOwner.state.autoScan === false);
+            assert(pageErrors.length === 0, 'page JavaScript errors: ' + pageErrors.join(' | '));
+            await browser.close();
+          })().catch(error => {
+            console.error(error);
+            process.exit(1);
+          });
+          JS
