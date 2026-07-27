@@ -2,8 +2,8 @@ node:internal/modules/run_main:123
     triggerUncaughtException(
     ^
 
-AssertionError [ERR_ASSERTION]: the command panel must actually scroll
-    at file:///home/runner/work/Legato/Legato/tools/test-command-list-hairpins.mjs:68:8 {
+AssertionError [ERR_ASSERTION]: the command panel must actually scroll at compact screen height
+    at file:///home/runner/work/Legato/Legato/tools/test-command-list-hairpins.mjs:69:8 {
   generatedMessage: false,
   code: 'ERR_ASSERTION',
   actual: false,
