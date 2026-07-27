@@ -1,24 +1,28 @@
 "use strict";
 (() => {
   const CHECK_EVERY_MS = 30000;
-  const PLACEMENT_FIX_VERSION = "20260727-total-placement-2";
+  const PLACEMENT_FIX_VERSION = "20260728-semantic-audio-drag-1";
 
-  function loadPlacementFix() {
-    if (document.querySelector('script[data-legato-placement-fix="' + PLACEMENT_FIX_VERSION + '"]')) return;
+  function loadScript(src, marker, onload) {
+    if (document.querySelector('script[' + marker + '="' + PLACEMENT_FIX_VERSION + '"]')) {
+      if (onload) onload();
+      return;
+    }
     const script = document.createElement('script');
-    script.src = './notation-placement-fix.js?v=' + encodeURIComponent(PLACEMENT_FIX_VERSION);
+    script.src = src + '?v=' + encodeURIComponent(PLACEMENT_FIX_VERSION);
     script.async = false;
-    script.dataset.legatoPlacementFix = PLACEMENT_FIX_VERSION;
-    script.onerror = () => console.error('[Legato placement] failed to load the notation placement repair');
-    script.onload = () => {
-      const priority = document.createElement('script');
-      priority.src = './notation-placement-priority-fix.js?v=' + encodeURIComponent(PLACEMENT_FIX_VERSION);
-      priority.async = false;
-      priority.dataset.legatoPlacementPriority = PLACEMENT_FIX_VERSION;
-      priority.onerror = () => console.error('[Legato placement] failed to load cursor-priority targeting');
-      document.head.appendChild(priority);
-    };
+    script.setAttribute(marker, PLACEMENT_FIX_VERSION);
+    script.onerror = () => console.error('[Legato placement] failed to load ' + src);
+    if (onload) script.onload = onload;
     document.head.appendChild(script);
+  }
+
+  function loadPlacementFixes() {
+    loadScript('./notation-placement-fix.js', 'data-legato-placement-fix', () => {
+      loadScript('./notation-placement-priority-fix.js', 'data-legato-placement-priority', () => {
+        loadScript('./notation-semantic-fix.js', 'data-legato-semantic-fix');
+      });
+    });
   }
 
   function currentBuild() {
@@ -51,7 +55,6 @@
       const nextBuild = buildFromHtml(await response.text());
       const activeBuild = currentBuild();
       if (!nextBuild || !activeBuild || nextBuild === activeBuild) return;
-
       const target = new URL(location.href);
       target.searchParams.set('legato-build', nextBuild);
       location.replace(target.href);
@@ -60,7 +63,7 @@
     }
   }
 
-  loadPlacementFix();
+  loadPlacementFixes();
   addEventListener('focus', checkForNewBuild);
   addEventListener('online', checkForNewBuild);
   document.addEventListener('visibilitychange', () => {
