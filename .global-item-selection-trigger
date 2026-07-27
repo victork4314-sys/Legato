@@ -1,1 +1,1 @@
-Rerun the global item selection browser test through the real render cycle.
+Rerun the corrected global matcher against every visible selectable item.
