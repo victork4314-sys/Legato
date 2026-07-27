@@ -6,9 +6,10 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="legato-build" content="20260727-command-list-hairpins-1">
-<script src="./cache-refresh.js?v=20260727-command-list-hairpins-1"></script>
-<script src="./support.js?v=20260727-command-list-hairpins-1"></script>
+<meta name="legato-build" content="20260727-complete-smufl-playback-1">
+<script src="./cache-refresh.js?v=20260727-complete-smufl-playback-1"></script>
+<script src="./smufl-catalog.js?v=20260727-complete-smufl-playback-1"></script>
+<script src="./support.js?v=20260727-complete-smufl-playback-1"></script>
 </head>
 <body>
 <x-dc>
@@ -249,6 +250,9 @@
           </sc-for>
           <div onClick="{{ openNotation }}" data-ptr="Add musical notation at the cursor" style="{{ notationButtonStyle }}" style-hover="border-color:var(--accent)">
             <span style="font-size:15px;line-height:1;">＋</span><span>MUSIC</span>
+          </div>
+          <div onClick="{{ openScoreSelector }}" data-ptr="Select any object in the score" style="{{ scoreSelectorButtonStyle }}" style-hover="border-color:var(--accent)">
+            <span style="font-size:13px;line-height:1;">◎</span><span>SELECT</span>
           </div>
         </div>
         <div style="display: flex; align-items: center; gap: 6px; padding: 4px 10px; border-left: 1px solid var(--border); background: var(--panel-low); flex: 0 1 auto; min-width: 0;">
@@ -1153,7 +1157,7 @@ const CLEFS = [
   { id: 'percussion', name: 'Perc.', glyph: '\uE069', line: 24, key: 4, size: 48 }
 ];
 const ARTICS = ['Accent', 'Staccato', 'Tenuto', 'Marcato', 'Slur', 'Trill'];
-const CAT = [
+const LEGACY_CAT = [
   ['Notes', [['Whole note','\uE1D2'],['Half note','\uE1D3'],['Quarter note','\uE1D5'],['Eighth note','\uE1D7'],['16th note','\uE1D9'],['32nd note','\uE1DB'],['Dotted note','\uE1E7'],['Double-dotted','\uE1E7\uE1E7'],['Grace note','\uE560'],['Acciaccatura','\uE560'],['Appoggiatura','\uE560'],['Cue-size note','\uE1D5'],['Add third','3'],['Add fifth','5'],['Add octave','8'],['Remove top note','\u2212'],['Remove bottom note','\u2212']]],
   ['Rests', [['Whole rest','\uE4E3'],['Half rest','\uE4E4'],['Quarter rest','\uE4E5'],['Eighth rest','\uE4E6'],['16th rest','\uE4E7'],['32nd rest','\uE4E8'],['Multi-measure rest','\uE4EE'],['Hide rest','\u25CC']]],
   ['Accidentals', [['Double flat','\uE264'],['Flat','\uE260'],['Three-quarter flat','\uE281'],['Quarter flat','\uE280'],['Natural','\uE261'],['Quarter sharp','\uE282'],['Three-quarter sharp','\uE283'],['Sharp','\uE262'],['Double sharp','\uE263'],['Parenthesized','(\uE262)'],['Courtesy','[\uE261]'],['Hide accidental','\u25CC']]],
@@ -1166,6 +1170,56 @@ const CAT = [
   ['Structure', [['Treble clef','\uE050'],['Bass clef','\uE062'],['Alto clef','\uE05C'],['Tenor clef','\uE05C'],['Percussion clef','\uE069'],['Key signature change','\uE262\uE260'],['Time signature change','\uE09E'],['Open meter','X'],['Normal barline','\uE030'],['Double barline','\uE031'],['Final barline','\uE032'],['Start repeat','\uE040'],['End repeat','\uE041'],['First ending','1.'],['Second ending','2.'],['Segno','\uE047'],['Coda','\uE048'],['To Coda','To \uE048'],['Fine','Fine'],['D.C.','D.C.'],['D.C. al Fine','D.C. al Fine'],['D.S.','D.S.'],['D.S. al Coda','D.S. al Coda'],['System break','\u21B5'],['Page break','\u21E5'],['Section break','\u00A7']]],
   ['Layout', [['Nudge left','\u2190'],['Nudge right','\u2192'],['Nudge up','\u2191'],['Nudge down','\u2193'],['More spacing','\u2194+'],['Less spacing','\u2194\u2212'],['Scale up','A+'],['Scale down','A\u2212'],['Hide item','\u25CC'],['Show item','\u25CF'],['Flip placement','\u21C5'],['Reset position','\u21BA'],['Move to staff above','\u21E7'],['Move to staff below','\u21E9'],['Show voice color','\u25C8']]]
 ];
+
+const SMUFL_CATALOG = window.LEGATO_SMUFL_CATALOG || { glyphs: [], groups: [], glyphCount: 0, rangeCount: 0 };
+const LEGATO_POPULAR = {
+  Notes: ['Whole note','Half note','Quarter note','Eighth note','16th note','Grace note','Add third','Add fifth','Add octave'],
+  Rests: ['Whole rest','Half rest','Quarter rest','Eighth rest','16th rest'],
+  Accidentals: ['Double flat','Flat','Natural','Sharp','Double sharp'],
+  Articulations: ['Staccato','Staccatissimo','Tenuto','Accent','Marcato','Fermata','Breath mark','Caesura','Up bow','Down bow','Natural harmonic','Snap pizzicato'],
+  Ornaments: ['Trill','Upper mordent','Lower mordent','Turn','Inverted turn','Acciaccatura','Appoggiatura','Arpeggio up','Arpeggio down','Fall','Scoop','Doit','Bend'],
+  Dynamics: ['pp','p','mp','mf','f','ff','sfz','Crescendo','Diminuendo','Swell'],
+  Lines: ['Tie','Slur','Phrase mark','Sustain pedal','8va','8vb','Glissando line','Portamento line','Let ring','Ritardando','Accelerando'],
+  Rhythm: ['Triplet','Quintuplet','Beam together','Break beam','Stem up','Stem down','Automatic stem'],
+  Text: ['Lyrics','Chord symbol','Playing technique','Tempo change','Rehearsal mark','Expression text'],
+  Structure: ['Treble clef','Bass clef','Alto clef','Tenor clef','Percussion clef','Key signature change','Time signature change','Normal barline','Double barline','Final barline','Start repeat','End repeat','First ending','Second ending','Segno','Coda','Fine']
+};
+function legacyTuple(category, item) {
+  return [item[0], item[1], { legacy: true, legacyCategory: category }];
+}
+function catalogTuple(item) {
+  return [item.label, item.glyph || '□', Object.assign({ catalog: true }, item)];
+}
+function buildCompleteCatalog() {
+  const out = [], popular = [], seenPopular = {};
+  Object.keys(LEGATO_POPULAR).forEach(category => {
+    const source = LEGACY_CAT.find(c => c[0] === category);
+    if (!source) return;
+    LEGATO_POPULAR[category].forEach(label => {
+      const item = source[1].find(x => x[0] === label);
+      if (item && !seenPopular[label]) { seenPopular[label] = 1; popular.push(legacyTuple(category, item)); }
+    });
+  });
+  (SMUFL_CATALOG.glyphs || []).filter(g => g.tier === 'popular').forEach(g => {
+    if (!seenPopular[g.label]) { seenPopular[g.label] = 1; popular.push(catalogTuple(g)); }
+  });
+  out.push(['Popular', popular]);
+  LEGACY_CAT.forEach(category => out.push([category[0], category[1].map(item => legacyTuple(category[0], item))]));
+  const byGroupRange = {};
+  (SMUFL_CATALOG.glyphs || []).forEach(g => {
+    const key = g.group + ' ' + g.range;
+    (byGroupRange[key] = byGroupRange[key] || []).push(catalogTuple(g));
+  });
+  (SMUFL_CATALOG.groups || []).forEach(group => {
+    Object.keys(byGroupRange).filter(key => key.split(' ')[0] === group).sort((a,b) => a.localeCompare(b)).forEach(key => {
+      const range = key.split(' ')[1];
+      out.push([group + ' · ' + range, byGroupRange[key]]);
+    });
+  });
+  return out;
+}
+const CAT = buildCompleteCatalog();
+
 const PROJECT_OPS = [
   ['New project', 'Replace the score with a blank project'],
   ['Open project…', 'Open a .legato file from this device'],
@@ -1321,7 +1375,7 @@ class Component extends DCLogic {
     focus: 0,
     halo: false, haloCat: 0, haloIdx: 0, menu: false, menuIdx: 0, dots: 0, radialIdx: 2, loop: false,
     armed: {}, grid: 0, playerName: '', entry: 'note', voice: 1, range: null, measureMarks: {},
-    scoreEvents: [], scoreSpans: [], spanDraft: null, scoreObjectId: null, scoreEventDraft: null, scoreText: '', editingScoreObject: null,
+    scoreEvents: [], scoreSpans: [], spanDraft: null, scoreObjectId: null, scoreEventDraft: null, scoreText: '', editingScoreObject: null, selectedChordHead: null,
     condense: false, divisi: {}, chords: [], layout: 'galley', partView: 'score',
     eng: { beamThick: 5.5, stemLen: 42, ledgerExt: 12, tupBrackets: true, systemGap: 74, margin: 56, pageW: 1120, pageH: 1450 },
     mix: DEFAULT_PLAYERS.map((p, i) => ({ vol: 80, pan: i % 2 ? 10 : -10, mute: false, solo: false })),
@@ -1601,6 +1655,10 @@ class Component extends DCLogic {
       const bpmA = Math.max(1, b0 + slope * (a - lo)), bpmB = Math.max(1, b0 + slope * (b - lo));
       seconds += Math.abs(slope) < .000001 ? (b - a) * 60 / bpmA : 60 / slope * Math.log(bpmB / bpmA);
     }
+    (s.scoreEvents || []).filter(ev => ev.type === 'hold' && ev.p >= start - .0005 && ev.p < end - .0005 && ev.playback).forEach(ev => {
+      if (ev.playback.sound === 'fermata') seconds += Math.max(0, (Number(ev.playback.factor) || 2) - 1) * 60 / this.pointTempoAt(ev.p, s);
+      else seconds += Math.max(0, Number(ev.playback.seconds) || 0);
+    });
     return seconds;
   }
   beatAtElapsed(start, seconds, state) {
@@ -1617,7 +1675,7 @@ class Component extends DCLogic {
     this.rumble('soft');
     this.setState(s => {
       const draft = s.scoreEventDraft || {}, editing = opts.editing || draft.editing || null;
-      const ev = { id: editing || this.scoreId('e'), object: 'event', type: type, name: name, text: opts.text || name, glyph: glyph || '', value: value, s: anchor.s, p: anchor.p, step: anchor.step, system: system };
+      const ev = Object.assign({ id: editing || this.scoreId('e'), object: 'event', type: type, name: name, text: opts.text || name, glyph: glyph || '', value: value, s: anchor.s, p: anchor.p, step: anchor.step, system: system }, opts.meta ? { smufl: opts.meta.id || null, range: opts.meta.range || null, playback: opts.meta } : {});
       let list = (s.scoreEvents || []).filter(x => x.id !== editing && !(x.type === type && x.system === system && (system || x.s === anchor.s) && Math.abs(x.p - anchor.p) < .002));
       list = list.concat([ev]).sort((a, b) => a.p - b.p);
       return { scoreEvents: list, scoreObjectId: ev.id, scoreEventDraft: null, editingScoreObject: null, panel: null, halo: false, selId: null,
@@ -1632,12 +1690,12 @@ class Component extends DCLogic {
     const d = this.state.scoreEventDraft || {};
     this.placeScoreEvent(type, label || d.name || type, glyph || d.glyph || '', value, { system: system, editing: d.editing || null });
   }
-  beginScoreSpan(type, name, glyph, editing) {
+  beginScoreSpan(type, name, glyph, editing, meta) {
     const anchor = editing ? null : this.scoreAnchor();
     const old = editing ? this.scoreObjectById(editing) : null;
     const start = old ? { s: old.s1, p: old.p1, step: old.step1 } : anchor;
     this.rumble('soft');
-    this.setState({ spanDraft: { object: 'span', id: editing || this.scoreId('s'), editing: editing || null, type: type, name: name, glyph: glyph || '', s1: start.s, p1: start.p, step1: start.step, system: type === 'ending' || type.indexOf('tempo-') === 0 }, scoreObjectId: null, halo: false, panel: null, menu: false, hub: false, kb: null, radial: false, picker: false, remapFor: null, captureFor: null, recovery: null, selId: null,
+    this.setState({ spanDraft: Object.assign({ object: 'span', id: editing || this.scoreId('s'), editing: editing || null, type: type, name: name, glyph: glyph || '', s1: start.s, p1: start.p, step1: start.step, system: type === 'ending' || type.indexOf('tempo-') === 0 }, meta ? { smufl: meta.id || null, range: meta.range || null, playback: meta } : {}), scoreObjectId: null, halo: false, panel: null, menu: false, hub: false, kb: null, radial: false, picker: false, remapFor: null, captureFor: null, recovery: null, selId: null,
       staff: start.s, pos: start.p, step: start.step, spoken: name + ' point one set — move to point two and press A' });
   }
   finishScoreSpan(anchor) {
@@ -1662,7 +1720,7 @@ class Component extends DCLogic {
     const isSpan = obj.object === 'span' || obj.p1 != null;
     const p = isSpan ? obj.p1 : obj.p, staff = isSpan ? obj.s1 : obj.s;
     this.rumble('tick');
-    this.setState({ zone: 3, scoreObjectId: id, selId: null, range: null, staff: staff || 0, pos: p || 0, step: isSpan ? (obj.step1 || 6) : (obj.step || 6), spoken: obj.name + ' selected — arrows move it, A edits, B deletes' });
+    this.setState({ zone: 3, scoreObjectId: id, selId: null, selectedChordHead: null, range: null, staff: staff || 0, pos: p || 0, step: isSpan ? (obj.step1 || 6) : (obj.step || 6), spoken: obj.name + ' selected — arrows move it, A edits, B deletes' });
   }
   deleteScoreObject() {
     const id = this.state.scoreObjectId;
@@ -1700,8 +1758,261 @@ class Component extends DCLogic {
     const id = this.state.editingScoreObject, value = this.state.scoreText || 'text';
     this.setState(s => ({ scoreEvents: (s.scoreEvents || []).map(x => x.id === id ? Object.assign({}, x, { text: value, name: value }) : x), kb: null, editingScoreObject: null, spoken: value + ' saved' }));
   }
+  durationFromCatalog(id, label) {
+    const t = ((id || '') + ' ' + (label || '')).toLowerCase();
+    if (/1024/.test(t)) return 't';
+    if (/512|256|128|64|32nd/.test(t)) return 't';
+    if (/16th/.test(t)) return 's';
+    if (/8th|eighth/.test(t)) return 'e';
+    if (/half/.test(t)) return 'h';
+    if (/whole|breve|longa|maxima/.test(t)) return 'w';
+    return 'q';
+  }
+  catalogClefValue(meta) {
+    const t = ((meta.id || '') + ' ' + (meta.label || '')).toLowerCase();
+    if (/fclef|bass/.test(t)) return 'bass';
+    if (/unpitched|percussion|neutral clef/.test(t)) return 'percussion';
+    if (/tenor/.test(t)) return 'tenor';
+    if (/cclef|alto/.test(t)) return 'alto';
+    return 'treble';
+  }
+  catalogSpanType(meta) {
+    if (meta.kind === 'hairpin') return meta.direction === 'down' ? 'hairpin-down' : 'hairpin-up';
+    if (meta.kind === 'octave-line') return Number(meta.semitones) === -24 ? 'octave-down-2' : Number(meta.semitones) === 24 ? 'octave-up-2' : Number(meta.semitones) < 0 ? 'octave-down' : 'octave-up';
+    if (meta.kind === 'pedal') return 'pedal';
+    if (meta.kind === 'slur') return 'slur';
+    if (meta.kind === 'tie') return 'tie';
+    if (meta.kind === 'let-ring') return 'let-ring';
+    if (meta.kind === 'vibrato') return 'vibrato';
+    if (meta.kind === 'tempo') return meta.direction === 'up' ? 'tempo-up' : 'tempo-down';
+    if (meta.kind === 'pitch-effect') return meta.effect === 'portamento' ? 'portamento' : 'gliss';
+    return 'line';
+  }
+  applyCatalogCommand(meta, name, glyph) {
+    const sel = this.selected(), playback = Object.assign({}, meta);
+    if (meta.kind === 'tie') { this.toggleTie(); return this.setState({ halo: false }); }
+    if (meta.placement === 'span') { this.beginScoreSpan(this.catalogSpanType(meta), name, glyph, null, playback); return; }
+    if (meta.placement === 'structure') {
+      const bar = Math.floor(this.state.pos / this.barCapacity());
+      this.setState(s => {
+        const mm = Object.assign({}, s.measureMarks || {});
+        mm[bar] = (mm[bar] || []).concat([{ g: glyph, name: name, smufl: meta.id }]);
+        return { measureMarks: mm };
+      });
+      this.placeScoreEvent('structure', name, glyph, name, { system: true, text: glyph || name, meta: playback });
+      return;
+    }
+    if (meta.kind === 'clef') {
+      this.placeScoreEvent('clef', name, glyph, this.catalogClefValue(meta), { system: false, meta: playback });
+      return;
+    }
+    if (meta.kind === 'meter') {
+      if (/timeSigCommon/i.test(meta.id || '')) { this.placeScoreEvent('meter', name, glyph, '4/4', { system: true, meta: playback }); return; }
+      if (/timeSigCutCommon/i.test(meta.id || '')) { this.placeScoreEvent('meter', name, glyph, '2/2', { system: true, meta: playback }); return; }
+      this.placeScoreEvent('meter-glyph', name, glyph, glyph, { system: true, text: glyph, meta: playback });
+      return;
+    }
+    if (meta.kind === 'dynamic' || meta.kind === 'hold') {
+      this.placeScoreEvent(meta.kind, name, glyph, glyph, { system: false, meta: playback });
+      return;
+    }
+    if (meta.kind === 'tempo' && meta.placement !== 'span') {
+      this.openScoreEventPanel('tempo', name, glyph);
+      return;
+    }
+    if (meta.kind === 'technique' && meta.placement === 'event') {
+      this.placeScoreEvent('technique', name, glyph, name, { system: false, text: name, meta: playback });
+      return;
+    }
+    if (meta.kind === 'text') {
+      this.placeScoreEvent('text', name, glyph, glyph, { system: false, text: glyph || name, meta: playback });
+      return;
+    }
+    if (meta.kind === 'rest') {
+      const dur = this.durationFromCatalog(meta.id, name), di = DURS.findIndex(d => d.id === dur);
+      this.setState({ entry: 'rest', halo: false, armed: Object.assign({}, this.state.armed, { restGlyph: glyph, restSmufl: meta.id }), spoken: name + ' armed — A enters it' });
+      if (di >= 0) this.setDur(di);
+      return;
+    }
+    if (meta.placement === 'note' || /^(notehead|accidental|articulation|ornament|tremolo|pitch-effect|technique|bowing|percussion)$/.test(meta.kind)) {
+      const patch = {};
+      if (meta.kind === 'notehead') { patch.noteheadGlyph = glyph; patch.noteheadSmufl = meta.id; patch.noteheadPlayback = playback; }
+      else if (meta.kind === 'accidental') { patch.acc = glyph; patch.accCents = meta.cents == null ? null : Number(meta.cents); patch.accSmufl = meta.id; }
+      else if (meta.kind === 'articulation') { patch.art = glyph; patch.artPlayback = playback; }
+      else if (meta.kind === 'ornament') { patch.orn = glyph; patch.ornPlayback = playback; }
+      else if (meta.kind === 'tremolo') { patch.orn = glyph; patch.tremoloPlayback = playback; }
+      else if (meta.kind === 'pitch-effect') { patch.orn = glyph; patch.pitchPlayback = playback; }
+      else if (meta.kind === 'percussion') { patch.noteheadGlyph = glyph; patch.percussionPlayback = playback; }
+      else { patch.techniqueGlyph = glyph; patch.techniquePlayback = playback; }
+      if (sel) {
+        this.editNote(patch, name + ' applied to the selected note');
+        this.setState({ halo: false }, () => this.audition(sel.step, sel.s, patch.acc || sel.acc, patch.art || sel.art, Object.assign({}, sel, patch)));
+      } else {
+        this.setState(s => ({ armed: Object.assign({}, s.armed, patch), halo: false, spoken: name + ' armed — the next note gets it' }));
+      }
+      return;
+    }
+    this.placeScoreEvent('glyph', name, glyph, glyph, { system: false, text: glyph || name, meta: playback });
+  }
+  scoreSelectableObjects(state) {
+    const s = state || this.state, out = [];
+    (s.notes || []).forEach(n => {
+      const baseLabel = n.rest ? 'Rest' : this.pitchName(n.step, n.s, n.acc, n.p);
+      if (!n.id) n.id = 'n' + Math.random().toString(36).slice(2, 8);
+      out.push({ kind: n.rest ? 'rest' : 'note', id: n.id, noteId: n.id, staff: n.s, pos: n.p, step: n.step, label: baseLabel + ' · bar ' + (Math.floor(n.p / this.barCapacity()) + 1) });
+      if (!n.rest) {
+        const heads = [n.step].concat((n.chord || []).map(x => n.step + x));
+        heads.forEach((step, index) => out.push({ kind: 'chord-head', id: n.id + ':head:' + index, noteId: n.id, headIndex: index, staff: n.s, pos: n.p, step: step, label: 'Chord note ' + this.pitchName(step, n.s, n.acc, n.p) }));
+      }
+      (n.marks || []).forEach((mark, index) => out.push({ kind: 'note-mark', id: n.id + ':mark:' + index, noteId: n.id, markIndex: index, staff: n.s, pos: n.p, step: n.step, label: 'Attached mark ' + (mark.name || mark.g || index + 1) }));
+    });
+    (s.chords || []).forEach((c, index) => out.push({ kind: 'chord-symbol', id: 'chord:' + index, chordIndex: index, staff: 0, pos: c.p, step: 10, label: 'Chord symbol ' + c.text }));
+    (s.scoreEvents || []).forEach(ev => out.push({ kind: 'score-event', id: ev.id, scoreObjectId: ev.id, staff: ev.s || 0, pos: ev.p, step: ev.step || 6, label: ev.name || ev.type }));
+    (s.scoreSpans || []).forEach(sp => {
+      out.push({ kind: 'score-span', id: sp.id, scoreObjectId: sp.id, staff: sp.s1 || 0, pos: sp.p1, step: sp.step1 || 6, label: (sp.name || sp.type) + ' · whole span' });
+      out.push({ kind: 'span-start', id: sp.id + ':start', scoreObjectId: sp.id, staff: sp.s1 || 0, pos: sp.p1, step: sp.step1 || 6, handle: 'start', label: (sp.name || sp.type) + ' · start handle' });
+      out.push({ kind: 'span-end', id: sp.id + ':end', scoreObjectId: sp.id, staff: sp.s2 == null ? sp.s1 : sp.s2, pos: sp.p2, step: sp.step2 || 6, handle: 'end', label: (sp.name || sp.type) + ' · end handle' });
+    });
+    Object.keys(s.measureMarks || {}).forEach(bar => (s.measureMarks[bar] || []).forEach((mark, index) => out.push({ kind: 'measure-mark', id: 'measure:' + bar + ':' + index, bar: Number(bar), markIndex: index, staff: 0, pos: Number(bar) * this.barCapacity(), step: 10, label: mark.name || 'Measure mark' })));
+    return out.sort((a,b) => a.pos - b.pos || a.staff - b.staff || a.label.localeCompare(b.label));
+  }
+  openScoreObjectSelector() {
+    const objects = this.scoreSelectableObjects();
+    this.rumble('tick');
+    this.setState({ panel: 'score-object-selector', panelIdx: 0, halo: false, hub: false, menu: false, spoken: objects.length ? 'Score object selector — ' + objects.length + ' selectable objects' : 'Score object selector — the score is empty' });
+  }
+  selectLogicalScoreObject(item) {
+    if (!item) return;
+    if (item.kind === 'score-event' || item.kind === 'score-span' || item.kind === 'span-start' || item.kind === 'span-end') {
+      this.selectScoreObject(item.scoreObjectId);
+      return this.setState({ panel: null, selectedChordHead: null, spoken: item.label + ' selected — arrows move it, A edits, B deletes' });
+    }
+    if (item.kind === 'chord-head') {
+      const n = this.state.notes.find(x => x.id === item.noteId);
+      if (n) this.selectNote(n);
+      return this.setState({ panel: null, selectedChordHead: { noteId: item.noteId, index: item.headIndex }, step: item.step, spoken: item.label + ' selected individually — up and down move it, B removes it' });
+    }
+    if (item.kind === 'note' || item.kind === 'rest' || item.kind === 'note-mark') {
+      const n = this.state.notes.find(x => x.id === item.noteId);
+      if (n) this.selectNote(n);
+      return this.setState({ panel: null, selectedChordHead: null, spoken: item.label + ' selected' });
+    }
+    if (item.kind === 'chord-symbol') return this.setState({ panel: 'chordsym', panelIdx: 0, chordIdx: item.chordIndex, pos: item.pos, spoken: item.label + ' selected' });
+    if (item.kind === 'measure-mark') return this.setState({ panel: null, staff: 0, pos: item.pos, selectedChordHead: null, spoken: item.label + ' selected at bar ' + (item.bar + 1) });
+  }
+  chordHeadSteps(note) { return [note.step].concat((note.chord || []).map(x => note.step + x)).sort((a,b) => a-b); }
+  rewriteChordHeads(noteId, steps, selectedStep) {
+    const uniq = Array.from(new Set(steps)).sort((a,b) => a-b);
+    if (!uniq.length) return this.setState(s => ({ notes: s.notes.filter(n => n.id !== noteId), selId: null, selectedChordHead: null, spoken: 'Chord deleted' }));
+    const base = uniq[0], offsets = uniq.slice(1).map(x => x - base), idx = Math.max(0, uniq.indexOf(selectedStep));
+    this.setState(s => ({ notes: s.notes.map(n => n.id === noteId ? Object.assign({}, n, { step: base, chord: offsets }) : n), step: selectedStep, selectedChordHead: { noteId: noteId, index: idx }, spoken: this.pitchName(selectedStep, (s.notes.find(n => n.id === noteId) || {}).s || 0) + ' chord note selected' }));
+  }
+  moveSelectedChordHead(delta) {
+    const pick = this.state.selectedChordHead;
+    if (!pick) return false;
+    const note = this.state.notes.find(n => n.id === pick.noteId);
+    if (!note) return false;
+    const steps = this.chordHeadSteps(note), old = steps[Math.max(0, Math.min(steps.length - 1, pick.index))], moved = Math.max(-6, Math.min(22, old + delta));
+    steps[pick.index] = moved;
+    this.rewriteChordHeads(note.id, steps, moved);
+    this.audition(moved, note.s, note.acc, note.art, note);
+    return true;
+  }
+  deleteSelectedChordHead() {
+    const pick = this.state.selectedChordHead;
+    if (!pick) return false;
+    const note = this.state.notes.find(n => n.id === pick.noteId);
+    if (!note) return false;
+    const steps = this.chordHeadSteps(note);
+    if (steps.length === 1) { this.deleteNote(); this.setState({ selectedChordHead: null }); return true; }
+    const removed = steps.splice(Math.max(0, Math.min(steps.length - 1, pick.index)), 1)[0];
+    this.rewriteChordHeads(note.id, steps, steps[Math.max(0, Math.min(steps.length - 1, pick.index - 1))]);
+    this.setState({ spoken: this.pitchName(removed, note.s) + ' removed from the chord' });
+    return true;
+  }
+  noteMidi(note, state) {
+    const s = state || this.state, clef = this.clefAt(note.s, note.p, s), key = this.keyAt(note.p, s);
+    if (note.accCents != null && isFinite(Number(note.accCents))) {
+      return midiFor(note.step, clef === 'bass', '\uE261', key, (s.clefOctaves || [])[note.s]) + Number(note.accCents) / 100;
+    }
+    return midiFor(note.step, clef === 'bass', note.acc, key, (s.clefOctaves || [])[note.s]);
+  }
+  articulationPlayback(note) {
+    const p = note && note.artPlayback, name = ((p && (p.profile || p.label || p.id)) || '').toLowerCase();
+    const glyph = note && note.art;
+    if (/staccatissimo/.test(name)) return { length: .28, gain: .95, attack: .65 };
+    if (/staccato/.test(name) || glyph === '\uE4A2') return { length: .48, gain: 1, attack: .8 };
+    if (/tenuto/.test(name) || glyph === '\uE4A4') return { length: 1.04, gain: 1.02, attack: .9 };
+    if (/marcato/.test(name)) return { length: .82, gain: 1.38, attack: 1.35 };
+    if (/accent|stress/.test(name) || glyph === '\uE4A0') return { length: .9, gain: 1.25, attack: 1.22 };
+    if (/portato/.test(name)) return { length: .72, gain: 1.06, attack: .95 };
+    if (/unstress/.test(name)) return { length: .92, gain: .78, attack: .72 };
+    return { length: .96, gain: 1, attack: 1 };
+  }
+  activeTechnique(staff, pos, state) {
+    const s = state || this.state;
+    return (s.scoreEvents || []).filter(x => x.p <= pos + .0005 && !x.system && x.s === staff && (x.type === 'technique' || (x.playback && x.playback.kind === 'technique'))).sort((a,b) => b.p-a.p)[0] || null;
+  }
+  techniqueInstrument(staff, pos, note, state) {
+    const s = state || this.state, base = s.instruments[staff] || 'acoustic_grand_piano';
+    const ev = this.activeTechnique(staff, pos, s), p = (note && note.techniquePlayback) || (ev && ev.playback) || {}, tech = String(p.technique || p.sound || '').toLowerCase();
+    if (/pizz/.test(tech) && /violin|viola|cello|contrabass|string|fiddle/.test(base)) return 'pizzicato_strings';
+    if (/tremolo/.test(tech) && /violin|viola|cello|contrabass|string|fiddle/.test(base)) return 'tremolo_strings';
+    if (/muted/.test(tech) && /trumpet|trombone|horn|brass/.test(base)) return 'muted_trumpet';
+    if (/harmonic/.test(tech) && /guitar/.test(base)) return 'guitar_harmonics';
+    if (/muted/.test(tech) && /guitar/.test(base)) return 'electric_guitar_muted';
+    const percussion = (note && note.percussionPlayback) || {};
+    const perc = String(percussion.instrument || percussion.label || '').toLowerCase();
+    if (/timpani/.test(perc)) return 'timpani';
+    if (/wood|block|clave/.test(perc)) return 'woodblock';
+    if (/agogo|cowbell/.test(perc)) return 'agogo';
+    if (/steel drum/.test(perc)) return 'steel_drums';
+    if (/taiko|bass drum/.test(perc)) return 'taiko_drum';
+    if (/tom/.test(perc)) return 'melodic_tom';
+    if (/cymbal|gong/.test(perc)) return 'reverse_cymbal';
+    if (/bell|triangle/.test(perc)) return 'tinkle_bell';
+    return base;
+  }
+  patchSelectedScoreObject(patch, label) {
+    const id = this.state.scoreObjectId;
+    if (!id) return false;
+    this.setState(s => ({
+      scoreEvents: (s.scoreEvents || []).map(x => x.id === id ? Object.assign({}, x, typeof patch === 'function' ? patch(x) : patch) : x),
+      scoreSpans: (s.scoreSpans || []).map(x => x.id === id ? Object.assign({}, x, typeof patch === 'function' ? patch(x) : patch) : x),
+      spoken: label
+    }));
+    return true;
+  }
+  applyLegacyFallback(cat, name, glyph) {
+    const s = this.state, note = this.selected(), object = this.scoreObjectById(s.scoreObjectId);
+    if (cat === 'Layout') {
+      if (/Nudge left/.test(name)) { if (object) this.moveScoreObject(-this.gridBeats(), 0); else if (note) this.editNote({ p: Math.max(0, note.p - this.gridBeats()) }, 'Note nudged left'); }
+      else if (/Nudge right/.test(name)) { if (object) this.moveScoreObject(this.gridBeats(), 0); else if (note) this.editNote({ p: Math.min(s.bars * this.barCapacity() - .001, note.p + this.gridBeats()) }, 'Note nudged right'); }
+      else if (/Nudge up/.test(name)) { if (object) this.patchSelectedScoreObject(x => ({ offsetY: (x.offsetY || 0) - 4 }), 'Notation nudged up'); else if (note) this.movePitch(1); }
+      else if (/Nudge down/.test(name)) { if (object) this.patchSelectedScoreObject(x => ({ offsetY: (x.offsetY || 0) + 4 }), 'Notation nudged down'); else if (note) this.movePitch(-1); }
+      else if (/More spacing/.test(name)) this.setState(p => ({ spacing: Math.min(180, p.spacing + 5), spoken: 'Score spacing expanded' }));
+      else if (/Less spacing/.test(name)) this.setState(p => ({ spacing: Math.max(50, p.spacing - 5), spoken: 'Score spacing tightened' }));
+      else if (/Scale up/.test(name)) { if (object) this.patchSelectedScoreObject(x => ({ scale: Math.min(2.5, (x.scale || 1) + .1) }), 'Notation scaled up'); else if (note) this.editNote(n => ({ scale: Math.min(2.5, (n.scale || 1) + .1) }), 'Note scaled up'); }
+      else if (/Scale down/.test(name)) { if (object) this.patchSelectedScoreObject(x => ({ scale: Math.max(.35, (x.scale || 1) - .1) }), 'Notation scaled down'); else if (note) this.editNote(n => ({ scale: Math.max(.35, (n.scale || 1) - .1) }), 'Note scaled down'); }
+      else if (/Hide item/.test(name)) { if (object) this.patchSelectedScoreObject({ hidden: true }, 'Notation hidden — still available in SELECT'); else if (note) this.editNote({ hidden: true }, 'Note hidden — still available in SELECT'); }
+      else if (/Show item/.test(name)) { if (object) this.patchSelectedScoreObject({ hidden: false }, 'Notation shown'); else if (note) this.editNote({ hidden: false }, 'Note shown'); }
+      else if (/Flip placement/.test(name)) { if (object) this.patchSelectedScoreObject(x => ({ flipped: !x.flipped }), 'Notation placement flipped'); else if (note) this.editNote(n => ({ flipped: !n.flipped }), 'Note attachment placement flipped'); }
+      else if (/Reset position/.test(name)) { const reset = { offsetX: 0, offsetY: 0, scale: 1, flipped: false, hidden: false }; if (object) this.patchSelectedScoreObject(reset, 'Notation position reset'); else if (note) this.editNote(reset, 'Note position reset'); }
+      else if (/Move to staff above/.test(name)) { if (object) this.moveScoreObject(0, -1); else if (note) this.editNote({ s: Math.max(0, note.s - 1) }, 'Note moved to staff above'); }
+      else if (/Move to staff below/.test(name)) { if (object) this.moveScoreObject(0, 1); else if (note) this.editNote({ s: Math.min(s.players.length - 1, note.s + 1) }, 'Note moved to staff below'); }
+      else if (/Show voice color/.test(name)) this.setState(p => ({ showVoiceColor: !p.showVoiceColor, spoken: p.showVoiceColor ? 'Voice colors hidden' : 'Voice colors shown' }));
+      else this.placeScoreEvent('glyph', name, glyph, glyph, { system: false, text: glyph || name });
+      return this.setState({ halo: false });
+    }
+    if (note && glyph) {
+      this.editNote(n => ({ marks: (n.marks || []).concat([{ g: glyph, name: name, place: 'above' }]) }), name + ' placed on the selected note');
+      return this.setState({ halo: false });
+    }
+    this.placeScoreEvent('glyph', name, glyph, glyph, { system: false, text: glyph || name });
+  }
   haloApply() {
-    const s = this.state, cat = CAT[s.haloCat][0], cmd = CAT[s.haloCat][1][s.haloIdx], name = cmd[0], glyph = cmd[1];
+    const s = this.state, shownCat = CAT[s.haloCat][0], cmd = CAT[s.haloCat][1][s.haloIdx], name = cmd[0], glyph = cmd[1], meta = cmd[2] || {}, cat = meta.legacyCategory || shownCat;
+    if (meta.catalog) return this.applyCatalogCommand(meta, name, glyph);
     const lower = name.toLowerCase();
     const sel = this.selected();
     if (cat === 'Lines') {
@@ -1780,7 +2091,7 @@ class Component extends DCLogic {
       else if (/Stem up/.test(name)) this.editNote({ stem: 'up' }, 'Stem up'); else if (/Stem down/.test(name)) this.editNote({ stem: 'down' }, 'Stem down'); else if (/Automatic stem/.test(name)) this.editNote({ stem: null }, 'Automatic stem');
       return this.setState({ halo: false, spoken: name + ' applied' });
     }
-    this.setState({ halo: false, spoken: name + ' applied' });
+    this.applyLegacyFallback(cat, name, glyph);
   }
   commitWheel() {
     const s = this.state, i = s.radialIdx;
@@ -1820,7 +2131,7 @@ class Component extends DCLogic {
       { id: 'cat:Ornaments', name: 'Ornaments', glyph: '\uE566', hint: 'X button · applies to the selected note, or the next one' },
       { id: 'cat:Articulations', name: 'Articulations', glyph: '\uE4A0', hint: 'Accents, staccato, tenuto, bowings' },
       { id: 'cat:Dynamics', name: 'Dynamics', glyph: '\uE522', hint: 'pppp to ffff, hairpins' },
-      { id: 'commands', name: 'All commands', glyph: '\uE1D7', hint: 'Every notation symbol, 11 categories' }
+      { id: 'commands', name: 'All commands', glyph: '\uE1D7', hint: 'Popular first, then every official SMuFL and Bravura range' }
     ];
   }
   openOrnaments() {
@@ -1895,6 +2206,7 @@ class Component extends DCLogic {
   }
   panelRows() {
     const s = this.state;
+    if (s.panel === 'score-object-selector') return this.scoreSelectableObjects(s).map(item => ({ label: item.label, value: item.kind.replace(/-/g, ' ').toUpperCase(), act: () => this.selectLogicalScoreObject(item) }));
     if (s.panel === 'score-clef') return CLEFS.map(c => ({ label: c.name + ' clef at the cursor', value: this.clefAt(s.staff, s.pos) === c.id ? 'ACTIVE HERE' : '', act: () => this.placeScoreEventChoice('clef', c.id, c.name + ' clef', c.glyph, false) }));
     if (s.panel === 'score-key') return KEYS.map((k, i) => ({ label: k.name + ' at the cursor', value: this.keyAt(s.pos).name === k.name ? 'ACTIVE HERE' : '', act: () => this.placeScoreEventChoice('key', i, k.name + ' key signature', '', true) }));
     if (s.panel === 'score-meter') return METERS.concat(['9/8', '10/8', '11/8', '13/8', '3/2', '4/2']).map(m => ({ label: m + ' at the cursor', value: this.meterAt(s.pos) === m ? 'ACTIVE HERE' : '', act: () => this.placeScoreEventChoice('meter', m, m + ' time signature', '', true) }));
@@ -2024,6 +2336,9 @@ class Component extends DCLogic {
     const s = this.state;
     if (action === 'project-menu' && phase === 'press' && !s.hub && !s.panel && !s.tour) return this.openHub();
     if (phase === 'release') { if (action === 'select-modifier') this._mod = false; return; }
+    if (s.selectedChordHead && action === 'move-up') return this.moveSelectedChordHead(1);
+    if (s.selectedChordHead && action === 'move-down') return this.moveSelectedChordHead(-1);
+    if (s.selectedChordHead && action === 'delete') return this.deleteSelectedChordHead();
     if (s.spanDraft && action === 'confirm') return this.finishScoreSpan();
     if (s.tieFrom && action === 'confirm') {
       const target = this.selected();
@@ -2519,7 +2834,7 @@ class Component extends DCLogic {
     if (!this.state.audition || this.state.playing) return;
     this._audGen = (this._audGen || 0) + 1;
     const at = note ? note.p : this.state.pos;
-    const ac = this.audio(), midi = midiFor(step, this.clefAt(staff, at) === 'bass', acc, this.keyAt(at), (this.state.clefOctaves || [])[staff]);
+    const ac = this.audio(), midi = note ? this.noteMidi(Object.assign({}, note, { step: step, acc: acc }), this.state) : midiFor(step, this.clefAt(staff, at) === 'bass', acc, this.keyAt(at), (this.state.clefOctaves || [])[staff]);
     const dec = note && ORN_REPLACES[note.orn];
     this.playTone(midi, ac.currentTime + .01, dec ? .09 : .3, staff, 92, art, true);
     if (note && (note.orn || (note.chord && note.chord.length))) this.realise(note, midi, ac.currentTime + .01, .46, 96);
@@ -2610,10 +2925,10 @@ class Component extends DCLogic {
       }
       if (this._fired['tied' + i]) return;
       const clef = this.clefAt(n.s, n.p, s), key = this.keyAt(n.p, s);
-      let m = midiFor(n.step, clef === 'bass', n.acc, key, (s.clefOctaves || [])[n.s]);
+      let m = this.noteMidi(n, s);
       const dynMap = { '\uE529': 20, '\uE52A': 30, '\uE52B': 42, '\uE520': 54, '\uE52C': 66, '\uE52D': 78, '\uE522': 92, '\uE52F': 104, '\uE530': 116, '\uE531': 124, '\uE539': 122, '\uE53B': 126, '\uE534': 96, '\uE53C': 118, '\uE526': 14 };
       const dynEv = this.effectiveScoreEvent('dynamic', n.s, n.p, s), dynGlyph = n.dyn || (dynEv && (dynEv.glyph || dynEv.value));
-      let vel = Math.round(dynGlyph && dynMap[dynGlyph] ? dynMap[dynGlyph] : 40 + (s.vel / 100) * 87);
+      let vel = Math.round(dynEv && dynEv.playback && dynEv.playback.velocity != null ? dynEv.playback.velocity : (dynGlyph && dynMap[dynGlyph] ? dynMap[dynGlyph] : 40 + (s.vel / 100) * 87));
       const hair = this.activeScoreSpan(['hairpin-up', 'hairpin-down', 'hairpin-swell'], n.s, n.p, s);
       if (hair) {
         const lo = Math.min(hair.p1, hair.p2), hi = Math.max(hair.p1, hair.p2), t = Math.max(0, Math.min(1, (n.p - lo) / Math.max(.001, hi - lo)));
@@ -2627,8 +2942,30 @@ class Component extends DCLogic {
       let duration = this.secondsBetween(n.p, n.p + beats, s);
       if (pedal) duration = Math.max(duration, this.secondsBetween(n.p, Math.max(n.p + beats, Math.max(pedal.p1, pedal.p2)), s));
       else if (slur) duration *= 1.08;
-      const decorated = ORN_REPLACES[n.orn];
-      this.playTone(m, Math.max(ac.currentTime, when), duration * (decorated ? .18 : .96), n.s, decorated ? vel * .8 : vel, n.art);
+      const hold = (s.scoreEvents || []).filter(ev => ev.type === 'hold' && !ev.system && ev.s === n.s && Math.abs(ev.p - n.p) < .011).sort((a,b) => b.p-a.p)[0];
+      if (hold && hold.playback) {
+        if (hold.playback.sound === 'fermata') duration *= Math.max(1, Number(hold.playback.factor) || 2);
+        else duration += Math.max(0, Number(hold.playback.seconds) || 0);
+      }
+      const decorated = ORN_REPLACES[n.orn] || n.ornPlayback || n.tremoloPlayback || n.pitchPlayback;
+      const ap = this.articulationPlayback(n);
+      const originalInstrument = s.instruments[n.s], semanticInstrument = this.techniqueInstrument(n.s, n.p, n, s);
+      if (semanticInstrument !== originalInstrument) s.instruments[n.s] = semanticInstrument;
+      this.playTone(m, Math.max(ac.currentTime, when), duration * (decorated ? .18 : ap.length), n.s, (decorated ? vel * .8 : vel) * ap.gain, n.art);
+      const glide = this.activeScoreSpan(['gliss','portamento'], n.s, n.p, s);
+      if (glide && Math.abs(n.p - Math.min(glide.p1, glide.p2)) < .011) {
+        const endPos = Math.max(glide.p1, glide.p2), target = s.notes.filter(q => !q.rest && q.s === n.s && Math.abs(q.p - endPos) < .011).sort((a,b) => Math.abs(a.step - n.step) - Math.abs(b.step - n.step))[0];
+        if (target) {
+          const targetMidi = this.noteMidi(target, s), count = Math.max(3, Math.min(24, Math.round(Math.abs(targetMidi - m) * 2))), segment = Math.max(.025, duration / count);
+          for (let gi = 1; gi < count; gi++) this.playTone(m + (targetMidi - m) * gi / count, when + segment * gi, segment * 1.15, n.s, vel * .72, null);
+        }
+      }
+      const vibrato = this.activeScoreSpan('vibrato', n.s, n.p, s);
+      if (vibrato) {
+        const stepV = .075, countV = Math.min(32, Math.floor(duration / stepV));
+        for (let vi = 1; vi < countV; vi++) this.playTone(m + Math.sin(vi * 1.7) * .22, when + vi * stepV, stepV * 1.08, n.s, vel * .36, null);
+      }
+      if (semanticInstrument !== originalInstrument) s.instruments[n.s] = originalInstrument;
       this.realise(n, m, when, duration, vel);
     });
     (s.chords || []).forEach((c, ci) => {
@@ -2819,7 +3156,7 @@ class Component extends DCLogic {
     try { localStorage.removeItem(STORE); } catch (e) {}
     this._undo = []; this._redo = [];
     this.setState({
-      notes: [], scoreEvents: [], scoreSpans: [], selId: null, scoreObjectId: null, spanDraft: null, title: 'Untitled score', composer: '', keyIdx: 0, meter: 0, tempo: 100,
+      notes: [], scoreEvents: [], scoreSpans: [], selId: null, scoreObjectId: null, selectedChordHead: null, spanDraft: null, title: 'Untitled score', composer: '', keyIdx: 0, meter: 0, tempo: 100,
       clefOctaves: (this.state.players || DEFAULT_PLAYERS).map(() => 0),
       pos: 0, step: 6, staff: 0, bars: 4, voice: 1, entry: 'note', grid: 0, dots: 0,
       armed: {}, range: null, measureMarks: {}, playPos: 0, playing: false,
@@ -2954,7 +3291,7 @@ class Component extends DCLogic {
       s.notes.filter(n => n.s === i && !n.rest).forEach(n => {
         const beats = noteBeats(n), on = Math.round(n.p * PPQ), off = Math.round((n.p + beats * .96) * PPQ);
         const clef = this.clefAt(i, n.p, s), key = this.keyAt(n.p, s), oct = this.activeScoreSpan(['octave-up', 'octave-down', 'octave-up-2', 'octave-down-2'], i, n.p, s);
-        let midi = midiFor(n.step, clef === 'bass', n.acc, key, (s.clefOctaves || [])[i]);
+        let midi = this.noteMidi(n, s);
         if (oct) midi += oct.type === 'octave-up' ? 12 : oct.type === 'octave-down' ? -12 : oct.type === 'octave-up-2' ? 24 : -24;
         events.push({ t: on, d: [144 + Math.min(15, i), Math.max(0, Math.min(127, midi)), n.art === '\uE4A0' ? 108 : 88] });
         events.push({ t: off, d: [128 + Math.min(15, i), Math.max(0, Math.min(127, midi)), 0] });
@@ -3104,6 +3441,22 @@ class Component extends DCLogic {
         break;
       }
       default: break;
+    }
+    const semantic = n.ornPlayback || n.tremoloPlayback || n.pitchPlayback || n.techniquePlayback;
+    if (semantic) {
+      const pattern = String(semantic.pattern || semantic.effect || semantic.sound || '').toLowerCase();
+      if (/mordent-down/.test(pattern)) rep([dnStep, 0], .07);
+      else if (/mordent/.test(pattern)) rep([upStep, 0], .07);
+      else if (/turn-inverted/.test(pattern)) rep([dnStep, 0, upStep, 0], .07);
+      else if (/turn/.test(pattern)) rep([upStep, 0, dnStep, 0], .07);
+      else if (/trill|shake/.test(pattern)) trill(/shake/.test(pattern) ? upStep + 1 : upStep, tN, tStep);
+      else if (/tremolo/.test(pattern) || semantic.kind === 'tremolo') {
+        const strokes = Math.max(1, Number(semantic.strokes) || 1), step = strokes >= 3 ? .055 : strokes === 2 ? .085 : .13;
+        for (let k = 1; k * step < dur; k++) this.playTone(m, when + k * step, step * 1.15, staff, v * .82, null);
+      } else if (/scoop|plop/.test(pattern)) run(/scoop/.test(pattern) ? -4 : 4, /scoop/.test(pattern) ? 0 : 0, when - .12, .03, .65);
+      else if (/fall|rip/.test(pattern)) run(-1, /rip/.test(pattern) ? -10 : -5, when + dur * .5, .03, .65);
+      else if (/doit|lift/.test(pattern)) run(1, 6, when + dur * .5, .03, .68);
+      else if (/bend|smear|flip|slide/.test(pattern)) [0,1,2,1,0].forEach((p,i) => this.playTone(m+p, when+i*(dur/5), dur/4, staff, v*.85, null));
     }
     if (n.tie) return;
     if (n.chord && n.chord.length && g !== '\uE634' && g !== '\uE635') {
@@ -3449,8 +3802,8 @@ class Component extends DCLogic {
     if (!target.id) target.id = 'n' + Math.random().toString(36).slice(2, 8);
     const sameStaff = target.s === start.s;
     const sameVoice = (target.voice || 1) === (start.voice || 1);
-    const startMidi = midiFor(start.step, this.state.clefs[start.s] === 'bass', start.acc, KEYS[this.state.keyIdx], (this.state.clefOctaves || [])[start.s]);
-    const targetMidi = midiFor(target.step, this.state.clefs[target.s] === 'bass', target.acc, KEYS[this.state.keyIdx], (this.state.clefOctaves || [])[target.s]);
+    const startMidi = this.noteMidi(start, this.state);
+    const targetMidi = this.noteMidi(target, this.state);
     const adjacent = Math.abs(target.p - (start.p + noteBeats(start))) < .01;
     if (!sameStaff || !sameVoice || startMidi !== targetMidi || !adjacent) {
       return this.setState({ spoken: 'That cannot be tied — choose the immediately following note of the same pitch, voice and staff' });
@@ -3596,12 +3949,12 @@ class Component extends DCLogic {
     if (this.state.tieFrom && n.id !== this.state.tieFrom) return this.finishTie(n);
     if (this.state.zone !== 3) this.setState({ zone: 3 });
     if (n.rest) {
-      this.setState({ selId: n.id, scoreObjectId: null, staff: n.s, pos: n.p, step: n.step,
+      this.setState({ selId: n.id, scoreObjectId: null, selectedChordHead: null, staff: n.s, pos: n.p, step: n.step,
         spoken: (DURS.find(d => d.id === n.d) || DURS[2]).name.toLowerCase() + ' rest, bar ' + (Math.floor(n.p / this.barCapacity()) + 1) + ' — silent' });
       return;
     }
     this.audition(n.step, n.s, n.acc, n.art, n);
-    this.setState({ selId: n.id, scoreObjectId: null, staff: n.s, pos: n.p, step: n.step, spoken: this.describe(n) + ' selected — up and down transpose it' });
+    this.setState({ selId: n.id, scoreObjectId: null, selectedChordHead: null, staff: n.s, pos: n.p, step: n.step, spoken: this.describe(n) + ' selected — up and down transpose it' });
   }
   pitchName(step, s, acc, pos) {
     const at = pos == null ? this.state.pos : pos;
@@ -3689,7 +4042,7 @@ class Component extends DCLogic {
     if (s0.entry !== 'rest') this.audition(s0.step, s0.staff, s0.acc === 'f' ? SM.flat : s0.acc === 'sh' ? SM.sharp : null, null);
     else this.rumble('tick');
     this.setState(s => {
-      const n = Object.assign({}, s.armed, { id: 'n' + Math.random().toString(36).slice(2, 8), s: s.staff, p: s.pos, d: DURS[s.dur].id, step: s.step, voice: s.voice, rest: s.entry === 'rest', dots: s.dots, acc: s.acc === 'n' ? null : (s.acc === 'f' ? SM.flat : SM.sharp) });
+      const n = Object.assign({ id: 'n' + Math.random().toString(36).slice(2, 8), s: s.staff, p: s.pos, d: DURS[s.dur].id, step: s.step, voice: s.voice, rest: s.entry === 'rest', dots: s.dots, acc: s.acc === 'n' ? null : (s.acc === 'f' ? SM.flat : SM.sharp) }, s.armed || {});
       const usedArmed = Object.keys(s.armed || {}).some(k => s.armed[k]);
       const nEnd = s.pos + noteBeats(n);
       const kept = s.notes.filter(x => !(x.rest && x.s === s.staff && (x.voice || 1) === (s.voice || 1) && x.p < nEnd - .0005 && x.p + noteBeats(x) > s.pos + .0005));
@@ -4125,7 +4478,9 @@ class Component extends DCLogic {
       autoScanPtrLabel: s.autoScan ? 'Stop auto scan' : 'Start auto scan',
       toggleAutoScanBtn: () => this.toggleAutoScan(),
       autoScanToggleStyle: 'display:flex;align-items:center;gap:7px;padding:5px 10px;border:1px solid ' + (s.autoScan ? accent : 'var(--border-strong)') + ';border-radius:5px;background:' + (s.autoScan ? 'rgba(var(--accent-rgb),.12)' : 'var(--raised)') + ';cursor:pointer;' + this.ring('top', 2),
-      openNotation: () => this.setState({ halo: true, haloCat: 5, haloIdx: 0, spoken: 'Add music at the cursor — choose a category and press A' }),
+      openNotation: () => this.setState({ halo: true, haloCat: 0, haloIdx: 0, spoken: 'Add music — Popular first, then every SMuFL and Bravura range' }),
+      openScoreSelector: () => this.openScoreObjectSelector(),
+      scoreSelectorButtonStyle: 'display:flex;align-items:center;justify-content:center;gap:5px;flex:0 0 auto;min-height:38px;padding:3px 10px;border-radius:4px;cursor:pointer;font-family:\'IBM Plex Mono\',monospace;font-size:9.5px;font-weight:700;letter-spacing:.05em;border:1px solid var(--border-strong);background:var(--control);color:var(--text);',
       notationButtonStyle: 'display:flex;align-items:center;justify-content:center;gap:5px;flex:0 0 auto;min-height:38px;padding:3px 10px;border-radius:4px;cursor:pointer;font-family:\'IBM Plex Mono\',monospace;font-size:9.5px;font-weight:700;letter-spacing:.05em;border:1px solid var(--border-strong);background:var(--control);color:var(--text);',
       returnToScore: () => this.toggleScoreEditor(),
       returnToScorePtr: s.zone === 3 ? 'Leave score editor — press A' : 'Return to score editor — press A',
@@ -4152,7 +4507,7 @@ class Component extends DCLogic {
       layerName: s.radial ? 'RT' : 'BASE',
       zoneName: ['Modes', 'Players', 'Toolbar', 'Score', 'Properties'][s.zone],
       zoneHint: s.zone === 3 ? 'STICK OR D-PAD MOVES THE CURSOR' : 'STICK OR D-PAD MOVES THE HIGHLIGHT · A PICKS',
-      selectionCount: s.spanDraft ? 'CHOOSE POINT TWO' : s.tieFrom ? 'CHOOSE TIE END' : (s.scoreObjectId ? 'MUSIC OBJECT SELECTED' : s.selId ? 'NOTE SELECTED' : 'CURSOR'),
+      selectionCount: s.spanDraft ? 'CHOOSE POINT TWO' : s.tieFrom ? 'CHOOSE TIE END' : (s.selectedChordHead ? 'CHORD NOTE SELECTED' : s.scoreObjectId ? 'MUSIC OBJECT SELECTED' : s.selId ? 'NOTE SELECTED' : 'CURSOR'),
       cursorPitch: this.pitchName(s.step, s.staff),
       cursorReadout: 'BAR ' + (Math.floor(s.pos / this.barCapacity()) + 1) + ' · BEAT ' + (s.pos % this.barCapacity() + 1).toFixed(2) + ' · ' + STAVES[s.staff].name.toUpperCase(),
       durGlyph: DURS[s.dur].glyph,
@@ -4651,8 +5006,9 @@ class Component extends DCLogic {
         else if (ev.type === 'rehearsal') { text2 = ev.text || ev.glyph || 'A'; top = topStaff.top - 64; size = 14; extra = 'font-weight:800;border:1.5px solid var(--ink);padding:2px 6px;border-radius:2px;'; }
         else if (ev.type === 'structure' || ev.type === 'system-text') { top = topStaff.top - 42; extra = ev.type === 'system-text' ? 'font-weight:600;' : ''; }
         else if (ev.type === 'technique') { top = st.top + 63; extra = 'font-style:italic;font-weight:600;'; }
+        else if (ev.type === 'glyph' || ev.type === 'meter-glyph') { text2 = ev.glyph || ev.text || ev.name; family = 'Bravura,\'Noto Music\',serif'; size = ev.type === 'meter-glyph' ? 31 : 27; top = ev.type === 'meter-glyph' ? st.top + 3 : st.top - 28; extra = ''; }
         const sel = selected ? 'outline:2px solid var(--score-accent);outline-offset:3px;background:rgba(var(--accent-rgb),.12);border-radius:2px;' : '';
-        return { text: text2, ptr: (ev.name || ev.type) + ' at the cursor', onSelect: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.selectScoreObject(ev.id); }, style: 'position:absolute;left:' + left + 'px;top:' + top + 'px;z-index:12;cursor:pointer;color:var(--ink);white-space:nowrap;font-family:' + family + ';font-size:' + size + 'px;line-height:1;' + extra + sel };
+        return { text: text2, ptr: (ev.name || ev.type) + ' at the cursor', onSelect: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.selectScoreObject(ev.id); }, style: ev.hidden ? 'display:none;' : 'position:absolute;left:' + (left + (ev.offsetX || 0)) + 'px;top:' + (top + (ev.offsetY || 0)) + 'px;z-index:12;cursor:pointer;color:var(--ink);white-space:nowrap;font-family:' + family + ';font-size:' + size + 'px;line-height:1;transform:scale(' + (ev.scale || 1) + ')' + (ev.flipped ? ' scaleY(-1)' : '') + ';transform-origin:center;' + extra + sel };
       }),
       scoreSpans: (() => {
         const list = (s.scoreSpans || []).slice();
@@ -4680,7 +5036,7 @@ class Component extends DCLogic {
           else if (sp.type === 'ending') { const first = STAVES.find(x => !x.hidden) || STAVES[0]; top = first.top - 72; h = 24; label = /^Second/.test(sp.name) ? '2.' : '1.'; line1 = base + 'top:8px;width:' + width + 'px;border-top:1.5px solid ' + accent2 + ';border-left:1.5px solid ' + accent2 + ';height:12px;'; }
           else { top = st1.top + 66; h = 20; label = sp.name || ''; line1 = base + 'top:10px;width:' + width + 'px;border-top:1.5px solid ' + accent2 + ';'; }
           const selectedStyle = selected ? 'background:rgba(var(--accent-rgb),.08);outline:1px dashed ' + accent2 + ';outline-offset:2px;' : '';
-          return { ptr: (sp.name || sp.type) + (sp.preview ? ' point two preview' : ' from point one to point two'), onSelect: (e) => { if (e && e.stopPropagation) e.stopPropagation(); if (!sp.preview) this.selectScoreObject(sp.id); }, wrapStyle: 'position:absolute;left:' + x1 + 'px;top:' + top + 'px;width:' + width + 'px;height:' + h + 'px;z-index:11;cursor:pointer;touch-action:manipulation;' + selectedStyle, line1Style: line1 || 'display:none;', line2Style: line2 || 'display:none;', label: label, end: end, labelStyle: label ? 'position:absolute;left:0;top:0;font-family:var(--ui-font);font-size:13px;font-style:italic;font-weight:600;color:' + accent2 + ';white-space:nowrap;pointer-events:none;' : 'display:none;', endStyle: end ? 'position:absolute;right:-2px;top:2px;font-family:var(--ui-font);font-size:15px;color:' + accent2 + ';pointer-events:none;' : 'display:none;' };
+          return { ptr: (sp.name || sp.type) + (sp.preview ? ' point two preview' : ' from point one to point two'), onSelect: (e) => { if (e && e.stopPropagation) e.stopPropagation(); if (!sp.preview) this.selectScoreObject(sp.id); }, wrapStyle: sp.hidden ? 'display:none;' : 'position:absolute;left:' + (x1 + (sp.offsetX || 0)) + 'px;top:' + (top + (sp.offsetY || 0)) + 'px;width:' + width + 'px;height:' + h + 'px;z-index:11;cursor:pointer;touch-action:manipulation;transform:scale(' + (sp.scale || 1) + ')' + (sp.flipped ? ' scaleY(-1)' : '') + ';transform-origin:left center;' + selectedStyle, line1Style: line1 || 'display:none;', line2Style: line2 || 'display:none;', label: label, end: end, labelStyle: label ? 'position:absolute;left:0;top:0;font-family:var(--ui-font);font-size:13px;font-style:italic;font-weight:600;color:' + accent2 + ';white-space:nowrap;pointer-events:none;' : 'display:none;', endStyle: end ? 'position:absolute;right:-2px;top:2px;font-family:var(--ui-font);font-size:15px;color:' + accent2 + ';pointer-events:none;' : 'display:none;' };
         });
       })(),
       ledgers: (() => {
@@ -4962,14 +5318,14 @@ class Component extends DCLogic {
           const rsi = this._vis && this._vis.map ? this._vis.map[target] : target;
           const st = STAVES[rsi] || STAVES[target] || STAVES[n.s];
           const top = st.top + 48 - n.step * 6, bi = beamInfo[i];
-          if (st.hidden) return { wrapStyle: 'display:none;', glyphStyle: 'display:none;', chordHeads: [], marks: [], glyph: '', flag: '', flagStyle: 'display:none;', stemStyle: 'display:none;', dotStyle: 'display:none;', dotGlyph: '', tupStyle: 'display:none;', tup: '', tieStyle: 'display:none;', selStyle: 'display:none;', acc: '', accStyle: 'display:none;', art: '', artStyle: 'display:none;', orn: '', ornStyle: 'display:none;', dyn: '', dynStyle: 'display:none;', hitStyle: 'display:none;', ptr: '', onSelect: () => {} };
+          if (st.hidden || n.hidden) return { wrapStyle: 'display:none;', glyphStyle: 'display:none;', chordHeads: [], marks: [], glyph: '', flag: '', flagStyle: 'display:none;', stemStyle: 'display:none;', dotStyle: 'display:none;', dotGlyph: '', tupStyle: 'display:none;', tup: '', tieStyle: 'display:none;', selStyle: 'display:none;', acc: '', accStyle: 'display:none;', art: '', artStyle: 'display:none;', orn: '', ornStyle: 'display:none;', dyn: '', dynStyle: 'display:none;', hitStyle: 'display:none;', ptr: '', onSelect: () => {} };
           const ck = n.rest ? null : chordKey(n), ci = ck ? chordInfo[ck] : null;
           const ownsStem = !ci || ci.ownerIdx === i;
           const up = bi ? bi.up : (n.stem ? n.stem === 'up' : (ci ? ci.up : (n.voice === 2 || n.voice === 4 ? false : n.step < 8)));
           const sourceHeads = ci ? ci.steps : [n.step].concat((n.chord || []).map(o => n.step + o)).sort((a, b) => a - b);
           const isChord = sourceHeads.length > 1;
           const stemless = !!bi || isChord;
-          const headGlyph = HEAD_GLYPH[n.d] || '\uE0A4';
+          const headGlyph = n.noteheadGlyph || HEAD_GLYPH[n.d] || '\uE0A4';
           const headColor = n.id && n.id === s.selId ? 'var(--score-accent)' : (n.voice === 2 ? '#3b3a52' : n.voice === 3 ? '#4b3a2a' : 'var(--ink)');
           const layout = ci
             ? { left: up ? ci.headLeftUp : ci.headLeftDown, stemX: up ? ci.stemXUp : ci.stemXDown }
@@ -4985,11 +5341,11 @@ class Component extends DCLogic {
           const anchor = n.step;
           const nextTie = n.tieTo ? s.notes.find(m => m.id === n.tieTo) : (n.tie ? s.notes.filter(m => !m.rest && m.s === n.s && (m.voice || 1) === (n.voice || 1) && m.step === n.step && Math.abs(m.p - (n.p + noteBeats(n))) < .01).sort((a, b) => a.p - b.p)[0] : null);
           return {
-            wrapStyle: 'position:absolute;left:' + noteX(n.p) + 'px;top:' + top + 'px;width:0;height:0;',
+            wrapStyle: 'position:absolute;left:' + (noteX(n.p) + (n.offsetX || 0)) + 'px;top:' + (top + (n.offsetY || 0)) + 'px;width:0;height:0;transform:scale(' + (n.scale || 1) + ');transform-origin:center;',
             onSelect: () => this.selectNote(n),
             hitStyle: 'position:absolute;left:-15px;top:-17px;width:30px;height:34px;cursor:pointer;z-index:8;',
             ptr: (n.rest ? 'Rest' : this.pitchName(n.step, n.s)) + ' at bar ' + (Math.floor(n.p / capBar) + 1),
-            glyph: n.rest ? (REST_GLYPHS[n.d] || REST_GLYPHS.q) : (!renderHeads ? '' : (stemless ? headGlyph : NOTE_GLYPHS[n.d][up ? 0 : 1])),
+            glyph: n.rest ? (n.restGlyph || REST_GLYPHS[n.d] || REST_GLYPHS.q) : (!renderHeads ? '' : (stemless ? headGlyph : NOTE_GLYPHS[n.d][up ? 0 : 1])),
             glyphStyle: n.rest
               ? glyphAt(-7, st.top + 24 - top, n.cue ? 34 : 48, n.id && n.id === s.selId ? 'var(--score-accent)' : 'var(--ink)') + 'z-index:3;'
               : (!renderHeads ? 'display:none;' : glyphAt(stemless ? layout.left[anchor] : -7, 0, n.cue ? 34 : 48, headColor) + 'z-index:3;'),
