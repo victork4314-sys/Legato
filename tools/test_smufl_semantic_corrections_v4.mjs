@@ -16,6 +16,6 @@ const unmuteOld = "const unmuted = await run([event('electronic','mute',mute,0),
 const unmuteNew = "const unmuted = await run([event('electronic','mute',mute,-0.1), event('electronic','unmute',unmute,0)]);";
 if (source.split(unmuteOld).length !== 2) throw new Error('Could not make electronic unmute timing explicit');
 source = source.replace(unmuteOld, unmuteNew);
-const output = path.resolve('/tmp/test-smufl-semantic-corrections-v4.mjs');
+const output = path.resolve('tools/.generated-smufl-semantic-corrections-v4.mjs');
 fs.writeFileSync(output, source);
 await import(pathToFileURL(output).href + '?v=' + Date.now());
