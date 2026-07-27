@@ -1,1 +1,1 @@
-Run the PR-triggered guarded global item selection patch and browser checks.
+Rerun the global item selection browser test through the real render cycle.
