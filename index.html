@@ -6,9 +6,9 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="legato-build" content="20260727-score-entry-time-1">
-<script src="./cache-refresh.js?v=20260727-score-entry-time-1"></script>
-<script src="./support.js?v=20260727-score-entry-time-1"></script>
+<meta name="legato-build" content="20260727-bumper-score-toggle-1">
+<script src="./cache-refresh.js?v=20260727-bumper-score-toggle-1"></script>
+<script src="./support.js?v=20260727-bumper-score-toggle-1"></script>
 </head>
 <body>
 <x-dc>
@@ -117,7 +117,7 @@
     </sc-for>
     <div style="flex: 1;"></div>
     <div style="display: flex; align-items: center; gap: 8px; padding-right: 2px; font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--muted-3); letter-spacing: .06em; white-space: nowrap; overflow: hidden;">
-      <span>LB / RB · ZONE</span>
+      <span>LB/RB · ACCIDENTAL · BOTH · SCORE</span>
     </div>
   </div>
 
@@ -1178,6 +1178,7 @@ const PROJECT_OPS = [
   ['Redo', 'Step forward through the transaction log']
 ];
 const DEFAULT_BINDINGS = { button0: 'confirm', button1: 'delete', button2: 'cycle-articulation', button3: 'command-halo', button4: 'previous-zone', button5: 'next-zone', button6: 'select-modifier', button7: 'duration-wheel', button8: 'undo', button9: 'project-menu', button10: 'play-toggle', button11: 'toggle-pointer', button12: 'move-up', button13: 'move-down', button14: 'move-left', button15: 'move-right' };
+const BUMPER_COMBO_MS = 120;
 const ONE_HANDED = Object.assign({}, DEFAULT_BINDINGS, { button4: 'move-left', button5: 'move-right', button6: 'move-down', button7: 'move-up', button2: 'duration-wheel', button3: 'command-halo' });
 const NOTE_GLYPHS = { w: ['\uE1D2', '\uE1D2'], h: ['\uE1D3', '\uE1D4'], q: ['\uE1D5', '\uE1D6'], e: ['\uE1D7', '\uE1D8'], s: ['\uE1D9', '\uE1DA'], t: ['\uE1DB', '\uE1DC'] };
 const X0 = 108, XSTEP = 54;
@@ -1311,7 +1312,7 @@ class Component extends DCLogic {
     condense: false, divisi: {}, chords: [], layout: 'galley', partView: 'score',
     eng: { beamThick: 5.5, stemLen: 42, ledgerExt: 12, tupBrackets: true, systemGap: 74, margin: 56, pageW: 1120, pageH: 1450 },
     mix: DEFAULT_PLAYERS.map((p, i) => ({ vol: 80, pan: i % 2 ? 10 : -10, mute: false, solo: false })),
-    tour: false, tourIdx: 0,
+    tour: false, tourIdx: 0, scoreHint: false,
     hub: false, hubIdx: 0, panel: null, panelIdx: 0, addingPlayer: false,
     calib: null, custom: {}, remapFor: null, remapIdx: 0, captureFor: null, metronome: false, countIn: false, spacing: 100, staffSize: 100, showBarNumbers: true, paper: 'Letter', orientation: 'Portrait', bars: 4, saveState: 'Autosaved', recovery: null, volume: 70, audition: true, haptics: true, sampleStatus: 'LOADING', oneHanded: false, deadzone: .14, repeatDelay: 300, repeatRate: 110, ptrSpeed: 11, focusRepeat: true, padLost: false, padEver: false, sidebarsHidden: false, autoScan: false, theme: 'verdant', fontPack: 'studio'
   };
@@ -1356,14 +1357,36 @@ class Component extends DCLogic {
     this._raf = requestAnimationFrame(() => this.poll());
 
   }
-  componentWillUnmount() { window.removeEventListener('keydown', this._keys); window.removeEventListener('keyup', this._keyup); window.__legatoKeys = null; cancelAnimationFrame(this._raf); if (this._autoScanTimer) clearInterval(this._autoScanTimer); if (this._ac) this._ac.close(); }
+  componentWillUnmount() { window.removeEventListener('keydown', this._keys); window.removeEventListener('keyup', this._keyup); window.__legatoKeys = null; cancelAnimationFrame(this._raf); if (this._autoScanTimer) clearInterval(this._autoScanTimer); if (this._scoreHintTimer) clearTimeout(this._scoreHintTimer); if (this._ac) this._ac.close(); }
   componentDidUpdate() {
     requestAnimationFrame(() => this.syncGlobalSelection());
   }
+  rememberScoreReturn() {
+    const selected = document.querySelector('[data-scan-selected="true"]');
+    if (!selected || selected.getAttribute('data-score-editor-shell') === 'true') return;
+    const zone = this.scanZoneForElement(selected), list = this.zoneScanItems(zone);
+    this._scoreReturn = { zone: zone, focus: Math.max(0, list.indexOf(selected)) };
+  }
   enterScoreEditor() {
+    if (this.state.zone !== 3) this.rememberScoreReturn();
     document.querySelectorAll('[data-scan-selected="true"]').forEach(el => el.removeAttribute('data-scan-selected'));
+    if (this._scoreHintTimer) clearTimeout(this._scoreHintTimer);
     this.rumble('tick');
-    this.setState({ zone: 3, focus: 0, spoken: 'Score editor active — arrows move the cursor; the SCORE control stays lit while you are inside' });
+    this.setState({ zone: 3, focus: 0, scoreHint: true, spoken: 'Score editor active — arrows move the cursor; press LB and RB together to leave' }, () => {
+      this._scoreHintTimer = setTimeout(() => this.setState({ scoreHint: false }), 1500);
+    });
+  }
+  leaveScoreEditor() {
+    const back = this._scoreReturn || { zone: 2, focus: 0 };
+    if (this._scoreHintTimer) clearTimeout(this._scoreHintTimer);
+    this.rumble('tick');
+    this.setState({ zone: back.zone, focus: back.focus, scoreHint: false, spoken: 'Left the score editor — press LB and RB together to return' }, () => {
+      requestAnimationFrame(() => this.syncGlobalSelection());
+    });
+  }
+  toggleScoreEditor() {
+    if (this.state.zone === 3) this.leaveScoreEditor();
+    else this.enterScoreEditor();
   }
   visibleScanItems() {
     const all = Array.from(document.querySelectorAll('[data-ptr]')).filter(el => {
@@ -2013,7 +2036,44 @@ class Component extends DCLogic {
         this._raf = requestAnimationFrame(() => this.poll());
         return;
       }
+      this._bumperPending = this._bumperPending || {};
+      const lbOn = !!(b[4] && b[4].pressed), rbOn = !!(b[5] && b[5].pressed);
+      const bumpersTogether = lbOn && rbOn;
+      if (bumpersTogether && !this._bumperCombo) {
+        delete this._bumperPending[4];
+        delete this._bumperPending[5];
+        this._bumperCombo = true;
+        this.toggleScoreEditor();
+      }
+      if (this._bumperCombo && !lbOn && !rbOn) this._bumperCombo = false;
+      [4, 5].forEach(i => {
+        const on = !!(b[i] && b[i].pressed), was = !!prev[i];
+        const action = this.bindings['button' + i];
+        if (!action) return;
+        if (this._bumperCombo) {
+          if (!on) delete this._bumperPending[i];
+          return;
+        }
+        if (on && !was) {
+          this._bumperPending[i] = { action: action, at: t, fired: false };
+          this._rep = this._rep || {};
+          this._rep[i] = t + s.repeatDelay;
+        }
+        const pending = this._bumperPending[i];
+        if (on && pending && !pending.fired && t - pending.at >= BUMPER_COMBO_MS) {
+          pending.fired = true;
+          this.dispatch(pending.action, 'press');
+        } else if (on && was && pending && pending.fired && /^move-|^extend|^octave/.test(pending.action)) {
+          if (this._rep && t >= this._rep[i]) { this._rep[i] = t + s.repeatRate; this.dispatch(pending.action, 'repeat'); }
+        } else if (!on && was && pending) {
+          if (!pending.fired) this.dispatch(pending.action, 'press');
+          this.dispatch(pending.action, 'release');
+          delete this._bumperPending[i];
+          if (this._rep) delete this._rep[i];
+        }
+      });
       for (let i = 0; i < b.length; i++) {
+        if (i === 4 || i === 5) continue;
         const action = this.bindings['button' + i];
         if (!action) continue;
         const on = b[i].pressed, was = !!prev[i];
@@ -3870,13 +3930,13 @@ class Component extends DCLogic {
       autoScanPtrLabel: s.autoScan ? 'Stop auto scan' : 'Start auto scan',
       toggleAutoScanBtn: () => this.toggleAutoScan(),
       autoScanToggleStyle: 'display:flex;align-items:center;gap:7px;padding:5px 10px;border:1px solid ' + (s.autoScan ? accent : 'var(--border-strong)') + ';border-radius:5px;background:' + (s.autoScan ? 'rgba(var(--accent-rgb),.12)' : 'var(--raised)') + ';cursor:pointer;' + this.ring('top', 2),
-      returnToScore: () => this.enterScoreEditor(),
-      returnToScorePtr: s.zone === 3 ? 'Score editor active' : 'Return to score editor — press A',
-      returnToScoreHint: s.zone === 3 ? 'ACTIVE' : 'A ENTER',
+      returnToScore: () => this.toggleScoreEditor(),
+      returnToScorePtr: s.zone === 3 ? 'Leave score editor — press A' : 'Return to score editor — press A',
+      returnToScoreHint: s.zone === 3 ? 'A LEAVE' : 'A ENTER',
       returnToScoreStyle: 'display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:58px;padding:3px 9px;border-radius:5px;cursor:pointer;line-height:1.05;border:1px solid ' + accent + ';background:' + (s.zone === 3 ? accent : 'rgba(var(--accent-rgb),.14)') + ';color:' + (s.zone === 3 ? 'var(--bg)' : 'var(--text-strong)') + ';box-shadow:' + (s.zone === 3 ? '0 0 0 2px rgba(var(--accent-rgb),.22)' : 'none') + ';',
       scoreEditorActive: s.zone === 3 ? 'true' : 'false',
       scoreEditorStyle: 'flex:1;min-height:0;overflow:auto;padding:12px 0 18px;background:radial-gradient(1200px 500px at 50% -5%,var(--raised),var(--bg) 70%);position:relative;',
-      scoreEditorBadgeStyle: s.zone === 3 ? 'position:sticky;top:8px;left:12px;z-index:55;width:max-content;margin:0 0 -27px 12px;padding:6px 9px;border-radius:5px;background:var(--accent);color:var(--bg);font-family:var(--ui-font);font-size:9px;font-weight:700;letter-spacing:.05em;pointer-events:none;' : 'display:none;',
+      scoreEditorBadgeStyle: s.zone === 3 && s.scoreHint ? 'position:sticky;top:8px;left:12px;z-index:55;width:max-content;margin:0 0 -27px 12px;padding:6px 9px;border-radius:5px;background:var(--accent);color:var(--bg);font-family:var(--ui-font);font-size:9px;font-weight:700;letter-spacing:.05em;pointer-events:none;' : 'display:none;',
       fileMenuStyle: 'display:flex;align-items:center;gap:7px;padding:4px 10px;border:1px solid var(--border-strong);border-radius:5px;background:var(--raised);cursor:pointer;' + this.ring('top', 4),
       toggleOneHanded: () => this.setState(p => ({ oneHanded: !p.oneHanded, spoken: p.oneHanded ? 'Two-handed profile' : 'One-handed profile — bumpers and triggers now navigate' })),
       oneHandedStyle: 'display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 9px;border-radius:5px;cursor:pointer;border:1px solid ' + (s.oneHanded ? accent : 'var(--border-strong)') + ';background:' + (s.oneHanded ? 'rgba(var(--accent-rgb),.1)' : 'var(--raised)') + ';' + this.ring('onehand', 0),
