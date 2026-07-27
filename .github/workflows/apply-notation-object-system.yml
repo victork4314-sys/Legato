@@ -5,6 +5,7 @@ on:
     paths:
       - index.html
       - tools/apply-notation-object-system.py
+      - tools/test-notation-object-system.mjs
       - .github/workflows/apply-notation-object-system.yml
 permissions:
   contents: write
@@ -69,6 +70,17 @@ jobs:
                   raise SystemExit('Missing marker: ' + marker)
           print('Notation object and protected controller guards passed')
           PY
+      - name: Install browser test runtime
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Run live notation object checks
+        run: |
+          python3 -m http.server 4173 >/tmp/legato-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID || true' EXIT
+          node tools/test-notation-object-system.mjs
       - name: Commit repaired app
         run: |
           git config user.name "github-actions[bot]"
