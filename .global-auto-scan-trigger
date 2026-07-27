@@ -1,1 +1,1 @@
-Run continuous all-item auto-scan verification after PR setup.
+Run the browser test against the existing continuous all-item auto-scan implementation.
