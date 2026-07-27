@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<script src="./support.js?v=20260727-real-dom-scan-1"></script>
+<script src="./support.js?v=20260727-console-focus-1"></script>
 </head>
 <body>
 <x-dc>
@@ -1244,35 +1244,58 @@ class Component extends DCLogic {
     requestAnimationFrame(() => this.syncGlobalSelection());
   }
   visibleScanItems() {
-    return Array.from(document.querySelectorAll('[data-ptr]')).filter(el => {
-      if (el.offsetParent === null) return false;
-      if (el.closest('[data-scroll="score"]')) return false;
+    const all = Array.from(document.querySelectorAll('[data-ptr]')).filter(el => {
+      if (el.offsetParent === null || el.closest('[data-scroll="score"]')) return false;
       if (el.getAttribute('aria-hidden') === 'true' || el.getAttribute('aria-disabled') === 'true') return false;
       const r = el.getBoundingClientRect();
       return r.width > 0 && r.height > 0;
     });
+    return all.filter(el => !all.some(other => other !== el && el.contains(other)));
   }
   zoneScanItems(zone) {
-    const all = this.visibleScanItems();
-    return all.filter(el => {
-      const r = el.getBoundingClientRect();
-      if (zone === 0) return r.top < 120;
-      if (zone === 1) return r.right <= 360 && r.top >= 70;
-      if (zone === 2) return r.top >= 70 && r.top < 235;
-      if (zone === 4) return r.left >= window.innerWidth - 430 && r.top >= 70;
+    return this.visibleScanItems().filter(el => {
+      if (zone === 1) return !!el.closest('[data-scroll="players"]');
+      if (zone === 2) return !!el.closest('[data-scroll="toolbar"]');
+      if (zone === 4) return !!el.closest('[data-scroll="props"]');
+      if (zone === 0) return !el.closest('[data-scroll="players"],[data-scroll="toolbar"],[data-scroll="props"]') && el.getBoundingClientRect().top < 125;
       return false;
     });
   }
+  scanZoneForElement(el) {
+    if (el.closest('[data-scroll="players"]')) return 1;
+    if (el.closest('[data-scroll="toolbar"]')) return 2;
+    if (el.closest('[data-scroll="props"]')) return 4;
+    return 0;
+  }
+  consoleScanOrder() {
+    const zones = this.state.sidebarsHidden ? [0,2] : [0,1,2,4];
+    return zones.reduce((out,z)=>out.concat(this.zoneScanItems(z)),[]);
+  }
+  focusDomItem(el) {
+    if (!el) return;
+    document.querySelectorAll('[data-scan-selected="true"]').forEach(x=>x.removeAttribute('data-scan-selected'));
+    el.setAttribute('data-scan-selected','true');
+    const zone=this.scanZoneForElement(el), list=this.zoneScanItems(zone), focus=Math.max(0,list.indexOf(el));
+    this._domScanIndex=Math.max(0,this.consoleScanOrder().indexOf(el));
+    this.reveal(el);
+    const spoken=el.getAttribute('data-ptr')||el.getAttribute('aria-label')||(el.textContent||'').trim()||'Item';
+    this.setState({zone,focus,spoken});
+  }
+  moveConsoleFocus(dx,dy) {
+    const items=this.visibleScanItems(); if(!items.length)return;
+    let cur=document.querySelector('[data-scan-selected="true"]');
+    if(!cur||items.indexOf(cur)<0)cur=this.zoneScanItems(this.state.zone)[this.state.focus]||items[0];
+    const r=cur.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
+    const cand=items.filter(x=>x!==cur).map(el=>{const a=el.getBoundingClientRect(),x=a.left+a.width/2,y=a.top+a.height/2,px=x-cx,py=y-cy;const ok=dx?(dx>0?px>4:px<-4):(dy>0?py>4:py<-4);if(!ok)return null;const pri=dx?Math.abs(px):Math.abs(py),sec=dx?Math.abs(py):Math.abs(px);return{el,score:pri+sec*2.4};}).filter(Boolean).sort((a,b)=>a.score-b.score);
+    if(cand.length)this.focusDomItem(cand[0].el);
+  }
   syncGlobalSelection() {
-    document.querySelectorAll('[data-scan-selected="true"]').forEach(el => el.removeAttribute('data-scan-selected'));
-    if (this.state.zone === 3) return;
-    const items = this.state.autoScan ? this.visibleScanItems() : this.zoneScanItems(this.state.zone);
-    if (!items.length) return;
-    const raw = this.state.autoScan ? (this._domScanIndex == null ? 0 : this._domScanIndex) : this.state.focus;
-    const index = ((raw % items.length) + items.length) % items.length;
-    const target = items[index];
-    target.setAttribute('data-scan-selected', 'true');
-    this.reveal(target);
+    const selected=document.querySelector('[data-scan-selected="true"]'), visible=this.visibleScanItems();
+    if(selected&&visible.indexOf(selected)>=0)return;
+    document.querySelectorAll('[data-scan-selected="true"]').forEach(el=>el.removeAttribute('data-scan-selected'));
+    if(this.state.zone===3)return;
+    const list=this.zoneScanItems(this.state.zone); if(!list.length)return;
+    const el=list[Math.max(0,Math.min(list.length-1,this.state.focus))]; el.setAttribute('data-scan-selected','true'); this.reveal(el);
   }
 
   get bindings() {
@@ -3277,22 +3300,11 @@ class Component extends DCLogic {
     return targets;
   }
   advanceAutoScan() {
-    if (!this.state.autoScan) return;
-    const items = this.visibleScanItems();
-    if (!items.length) return;
-    let next = (this._domScanIndex == null ? -1 : this._domScanIndex) + 1;
-    if (next >= items.length) {
-      const nextMode = (this.state.mode + 1) % 6;
-      this._domScanIndex = -1;
-      return this.setState({ mode: nextMode, zone: 2, focus: 0 }, () => requestAnimationFrame(() => this.advanceAutoScan()));
-    }
-    this._domScanIndex = next;
-    const target = items[next];
-    document.querySelectorAll('[data-scan-selected="true"]').forEach(el => el.removeAttribute('data-scan-selected'));
-    target.setAttribute('data-scan-selected', 'true');
-    this.reveal(target);
-    const label = target.getAttribute('data-ptr') || target.getAttribute('aria-label') || target.textContent.trim() || 'Item';
-    this.setState({ spoken: label });
+    if (!this.state.autoScan || this.anyOverlay() || this.state.ptrOn) return;
+    const items=this.consoleScanOrder(); if(!items.length)return;
+    let i=(this._domScanIndex==null?-1:this._domScanIndex)+1;
+    if(i>=items.length){this._domScanIndex=-1;return this.setState({mode:(this.state.mode+1)%6,zone:0,focus:0},()=>requestAnimationFrame(()=>this.advanceAutoScan()));}
+    this._domScanIndex=i; this.focusDomItem(items[i]);
   }
 
   focusList() {
@@ -3341,44 +3353,8 @@ class Component extends DCLogic {
       .concat([{ t: 'slider', i: 0, label: 'Velocity' }, { t: 'slider', i: 1, label: 'Timing offset' }, { t: 'slider', i: 2, label: 'Note spacing' }]);
     return [];
   }
-  moveFocus(d) {
-    const list = this.focusList();
-    if (!list.length) return;
-    this.setState(s => {
-      const i = Math.max(0, Math.min(list.length - 1, s.focus + d));
-      return { focus: i, spoken: list[i].label };
-    });
-  }
-  adjustFocus(d) {
-    const list = this.focusList(), it = list[this.state.focus];
-    if (it && it.t === 'pad') {
-      const keys = ['ptrSpeed', 'deadzone', 'repeatDelay', 'repeatRate', 'volume'], step = [1, .02, 40, 20, 5][it.i];
-      const lim = [[1, 40], [.04, .5], [120, 1200], [40, 600], [0, 100]][it.i];
-      const key = keys[it.i];
-      return this.setState(s => {
-        const v = Math.max(lim[0], Math.min(lim[1], +(s[key] + step * d).toFixed(2)));
-        return Object.assign({ spoken: it.label + ' ' + v }, { [key]: v });
-      });
-    }
-    if (it && it.t === 'grid') return this.cycleGrid(d);
-    if (it && it.t === 'eng') { const c = this._engrave && this._engrave[it.i]; if (c) return d > 0 ? c.inc() : c.dec(); return; }
-    if (it && it.t === 'prt') { const c = this._print && this._print[it.i]; if (c) return c.act(); return; }
-    if (it && it.t === 'mix') {
-      return this.setState(p => ({
-        mix: p.mix.map((x, j) => j === it.i ? Object.assign({}, x, { vol: Math.max(0, Math.min(100, x.vol + d * 5)) }) : x),
-        spoken: STAVES[it.i].name + ' volume ' + Math.max(0, Math.min(100, p.mix[it.i].vol + d * 5))
-      }));
-    }
-    if (it && it.t === 'key') return this.cycleKey(d);
-    if (it && it.t === 'meter') return this.cycleMeter(d);
-    if (it && it.t === 'tempo') return this.setTempo(d);
-    if (!it || it.t !== 'slider') return this.moveFocus(d);
-    const key = ['vel', 'timing', 'width'][it.i];
-    this.setState(s => {
-      const v = Math.max(0, Math.min(100, s[key] + d * 4));
-      return Object.assign({ spoken: it.label + ' ' + v }, { [key]: v });
-    });
-  }
+  moveFocus(d) { this.moveConsoleFocus(0,d); }
+  adjustFocus(d) { this.moveConsoleFocus(d,0); }
   activateFocus() {
     const liveTarget = document.querySelector('[data-scan-selected="true"]');
     if (liveTarget && this.state.zone !== 3) { liveTarget.click(); return; }
