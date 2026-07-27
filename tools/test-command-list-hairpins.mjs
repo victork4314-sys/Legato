@@ -23,14 +23,29 @@ await setState({
   scoreObjectId: null, spanDraft: null, selId: null
 });
 
-const commandCoverage = await page.evaluate(() => {
-  const names = CAT.flatMap(category => category[1].map(command => command[0]));
-  return ['Tempo change', 'Key signature change', 'Time signature change', 'Horizontal line'].every(name => names.includes(name));
-});
-assert.equal(commandCoverage, true, 'all newly exposed notation changes must be in the Y command list');
+const categoryIndex = async name => {
+  const labels = await page.locator('[data-halo-category]').allTextContents();
+  const index = labels.findIndex(label => label.trim().startsWith(name));
+  assert.ok(index >= 0, name + ' category should be rendered in the Y command list');
+  return index;
+};
+const commandNames = async index => {
+  await setState({ halo: true, haloCat: index, haloIdx: 0 });
+  return (await page.locator('[data-halo-item]').allTextContents()).map(label => label.trim());
+};
+
+// Newly added point and span workflows must be visibly reachable in Y.
+const textCategory = await categoryIndex('Text');
+const structureCategory = await categoryIndex('Structure');
+const linesCategory = await categoryIndex('Lines');
+assert.ok((await commandNames(textCategory)).some(name => name.includes('Tempo change')), 'Tempo change must be visible in Y');
+const structureNames = await commandNames(structureCategory);
+assert.ok(structureNames.some(name => name.includes('Key signature change')), 'Key signature change must be visible in Y');
+assert.ok(structureNames.some(name => name.includes('Time signature change')), 'Time signature change must be visible in Y');
+assert.ok((await commandNames(linesCategory)).some(name => name.includes('Horizontal line')), 'Horizontal line must be visible in Y');
 
 // Move through the long Ornaments list with controller-style navigation.
-const ornaments = await page.evaluate(() => CAT.findIndex(category => category[0] === 'Ornaments'));
+const ornaments = await categoryIndex('Ornaments');
 await setState({ halo: true, haloCat: ornaments, haloIdx: 0 });
 for (let i = 0; i < 13; i++) {
   await page.evaluate(() => window.__legatoOwner.haloMove(0, 1));
@@ -53,7 +68,7 @@ assert.equal(scrollCheck.visible, true, 'the selected command must scroll into v
 assert.ok(scrollCheck.scrollTop > 0, 'the command panel must actually scroll');
 
 // A clicked tile must apply itself, not the previously selected command.
-const dynamics = await page.evaluate(() => CAT.findIndex(category => category[0] === 'Dynamics'));
+const dynamics = await categoryIndex('Dynamics');
 await setState({ halo: true, haloCat: dynamics, haloIdx: 0, pos: 0.5, staff: 0, step: 7, spanDraft: null });
 const crescendoTile = page.locator('[data-halo-item]').filter({ hasText: 'Crescendo' }).first();
 await crescendoTile.click();
