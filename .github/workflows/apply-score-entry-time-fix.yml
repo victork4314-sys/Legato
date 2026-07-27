@@ -17,7 +17,7 @@ jobs:
           ref: fix/score-entry-and-time-size
       - name: Apply guarded patch
         run: python3 tools/apply-score-entry-time-fix.py
-      - name: Check embedded JavaScript syntax
+      - name: Check embedded JavaScript syntax and capture result
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -28,7 +28,23 @@ jobs:
               raise SystemExit('No embedded JavaScript found')
           Path('/tmp/legato-score-entry.js').write_text('\n'.join(blocks), encoding='utf-8')
           PY
-          node --check /tmp/legato-score-entry.js
+          set +e
+          node --check /tmp/legato-score-entry.js > tools/score-entry-syntax.txt 2>&1
+          code=$?
+          echo "$code" > tools/score-entry-syntax-exit.txt
+          cat tools/score-entry-syntax.txt
+          exit 0
+      - name: Commit exact diagnostic when syntax fails
+        run: |
+          if [ "$(cat tools/score-entry-syntax-exit.txt)" != "0" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add tools/score-entry-syntax.txt tools/score-entry-syntax-exit.txt
+            git diff --cached --quiet || git commit -m "Capture score entry syntax error"
+            git push origin HEAD:fix/score-entry-and-time-size
+          fi
+      - name: Stop when syntax failed
+        run: test "$(cat tools/score-entry-syntax-exit.txt)" = "0"
       - name: Verify exact scope
         run: |
           python3 - <<'PY'
