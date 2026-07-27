@@ -14,4 +14,12 @@ new = """    count = text.count(old)
 """
 if old not in t:
     raise SystemExit('Could not find guarded replacement helper')
-p.write_text(t.replace(old, new, 1), encoding='utf-8')
+t = t.replace(old, new, 1)
+tie_old = 'one("           const nextTie = n.tie ?'
+tie_new = 'one("          const nextTie = n.tie ?'
+tie_repl_old = '    "           const nextTie = n.tieTo ?'
+tie_repl_new = '    "          const nextTie = n.tieTo ?'
+if tie_old not in t or tie_repl_old not in t:
+    raise SystemExit('Could not find tie renderer guard indentation')
+t = t.replace(tie_old, tie_new, 1).replace(tie_repl_old, tie_repl_new, 1)
+p.write_text(t, encoding='utf-8')
