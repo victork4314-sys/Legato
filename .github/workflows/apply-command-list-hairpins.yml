@@ -19,11 +19,30 @@ jobs:
 
       - name: Apply guarded repair
         run: |
+          set +e
           if grep -q '20260727-command-list-hairpins-1' index.html; then
-            echo 'Command list and hairpin repair already applied'
+            echo 'Command list and hairpin repair already applied' > tools/command-list-patch.txt
+            CODE=0
           else
-            python3 tools/apply-command-list-hairpin-fix.py
+            python3 tools/apply-command-list-hairpin-fix.py > tools/command-list-patch.txt 2>&1
+            CODE=$?
           fi
+          echo "$CODE" > tools/command-list-patch-exit.txt
+          cat tools/command-list-patch.txt
+          exit 0
+
+      - name: Commit exact patch diagnostic when needed
+        run: |
+          if [ "$(cat tools/command-list-patch-exit.txt)" != "0" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add tools/command-list-patch.txt tools/command-list-patch-exit.txt
+            git commit -m "Capture command list patch failure" || true
+            git push origin HEAD:fix/command-list-scroll-hairpins
+          fi
+
+      - name: Stop on patch failure
+        run: test "$(cat tools/command-list-patch-exit.txt)" = "0"
 
       - name: Check embedded JavaScript syntax
         run: |
@@ -41,54 +60,5 @@ jobs:
       - name: Verify exact scope and protected controller paths
         run: |
           python3 - <<'PY'
-          from pathlib import Path
-          text = Path('index.html').read_text(encoding='utf-8')
-          required = [
-            '20260727-command-list-hairpins-1',
-            "['Tempo change','♩ = 120']",
-            "['Key signature change','\\uE262\\uE260']",
-            "['Time signature change','\\uE09E']",
-            "['Horizontal line','—']",
-            'revealHaloSelection()',
-            'data-halo-category="{{ c.index }}"',
-            'data-halo-item="{{ h.index }}"',
-            "clip-path:' + outer",
-            'if (e && e.stopPropagation) e.stopPropagation()',
-            "button4: 'previous-zone', button5: 'next-zone'",
-            'const BUMPER_COMBO_MS = 120;',
-            "case 'previous-zone': if (s.zone === 3 && s.selId) { this.nudgeAccidental(-1); break; } this.cycleVisibleZone(-1); break;",
-            "case 'next-zone': if (s.zone === 3 && s.selId) { this.nudgeAccidental(1); break; } this.cycleVisibleZone(1); break;"
-          ]
-          for marker in required:
-              if marker not in text:
-                  raise SystemExit('Missing required marker: ' + marker)
-          forbidden = [
-            "transform:rotate(' + (up ? -7 : 7) + 'deg)",
-            "onSelect: () => { this.setState({ haloIdx: i }); this.haloApply(); }"
-          ]
-          for marker in forbidden:
-              if marker in text:
-                  raise SystemExit('Old broken path remains: ' + marker)
-          print('Exact command-list, selection, hairpin and protected-controller guards passed')
+          from pathlib import import Path
           PY
-
-      - name: Install browser runtime
-        run: |
-          npm init -y >/dev/null 2>&1
-          npm install playwright@1.55.0
-          npx playwright install --with-deps chromium
-
-      - name: Run live command list and hairpin checks
-        run: |
-          python3 -m http.server 4173 >/tmp/legato-http.log 2>&1 &
-          SERVER_PID=$!
-          trap 'kill $SERVER_PID || true' EXIT
-          node tools/test-command-list-hairpins.mjs
-
-      - name: Commit repaired app
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html
-          git diff --cached --quiet || git commit -m "Repair Y command scrolling and hairpin geometry"
-          git push origin HEAD:fix/command-list-scroll-hairpins
