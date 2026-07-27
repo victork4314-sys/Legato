@@ -1,1 +1,1 @@
-Applied rests, two-point ties, selectable score editor, staff clicking, time placement and font choices
+Interaction repair already applied
