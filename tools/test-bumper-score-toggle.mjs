@@ -12,6 +12,13 @@ await context.addInitScript(() => {
     buttons[index].value = pressed ? 1 : 0;
     pad.timestamp = performance.now();
   };
+  window.__setBothBumpers = pressed => {
+    [4, 5].forEach(index => {
+      buttons[index].pressed = pressed;
+      buttons[index].value = pressed ? 1 : 0;
+    });
+    pad.timestamp = performance.now();
+  };
 });
 
 const page = await context.newPage();
@@ -21,19 +28,35 @@ await page.waitForFunction(() => window.__legatoOwner && document.querySelector(
 const setButton = async (index, pressed) => {
   await page.evaluate(([i, p]) => window.__setPadButton(i, p), [index, pressed]);
 };
-const combo = async () => {
-  await setButton(4, true);
-  await setButton(5, true);
-  await page.waitForTimeout(70);
-  await setButton(4, false);
-  await setButton(5, false);
-  await page.waitForTimeout(100);
+const snapshot = async label => {
+  const state = await page.evaluate(() => {
+    const owner = window.__legatoOwner;
+    const selected = owner.selected();
+    return {
+      zone: owner.state.zone,
+      selId: owner.state.selId,
+      accidental: selected ? selected.acc ?? null : 'NO_SELECTION',
+      comboLatched: !!owner._bumperCombo,
+      pending4: owner._bumperPending && owner._bumperPending[4] ? { ...owner._bumperPending[4] } : null,
+      pending5: owner._bumperPending && owner._bumperPending[5] ? { ...owner._bumperPending[5] } : null,
+      previous: owner._prev ? owner._prev.slice(4, 6) : null,
+      spoken: owner.state.spoken
+    };
+  });
+  console.log(label, JSON.stringify(state));
+  return state;
 };
-const single = async index => {
+const combo = async () => {
+  await page.evaluate(() => window.__setBothBumpers(true));
+  await page.waitForTimeout(90);
+  await page.evaluate(() => window.__setBothBumpers(false));
+  await page.waitForTimeout(220);
+};
+const single = async (index, hold = 220) => {
   await setButton(index, true);
-  await page.waitForTimeout(180);
+  await page.waitForTimeout(hold);
   await setButton(index, false);
-  await page.waitForTimeout(80);
+  await page.waitForTimeout(140);
 };
 
 await page.evaluate(() => {
@@ -41,7 +64,7 @@ await page.evaluate(() => {
   owner.setState({ zone: 2, focus: 0, scoreHint: false });
   requestAnimationFrame(() => owner.syncGlobalSelection());
 });
-await page.waitForTimeout(100);
+await page.waitForTimeout(120);
 
 await combo();
 assert.equal(await page.evaluate(() => window.__legatoOwner.state.zone), 3, 'LB+RB should enter the score');
@@ -51,23 +74,30 @@ assert.equal(await page.evaluate(() => window.__legatoOwner.state.scoreHint), fa
 
 await page.evaluate(() => {
   const owner = window.__legatoOwner;
-  const note = owner.state.notes[0];
-  owner.selectNote(note);
-  owner.editNote({ acc: null }, 'reset accidental for test');
+  owner.selectNote(owner.state.notes[0]);
 });
+await page.waitForTimeout(160);
+assert.ok(await page.evaluate(() => window.__legatoOwner.selected()), 'test note should be selected');
+await page.evaluate(() => window.__legatoOwner.editNote({ acc: null }, 'reset accidental for test'));
 await page.waitForTimeout(80);
+await snapshot('before LB');
 await single(4);
+await snapshot('after LB');
 const flatValue = await page.evaluate(() => window.__legatoOwner.selected().acc);
 assert.ok(flatValue, 'LB alone should still apply an accidental');
 assert.equal(await page.evaluate(() => window.__legatoOwner.state.zone), 3, 'LB alone should not leave the score');
 
 await page.evaluate(() => window.__legatoOwner.editNote({ acc: null }, 'reset accidental for test'));
+await page.waitForTimeout(80);
+await snapshot('before RB');
 await single(5);
+await snapshot('after RB');
 const sharpValue = await page.evaluate(() => window.__legatoOwner.selected().acc);
 assert.ok(sharpValue, 'RB alone should still apply an accidental');
 assert.notEqual(sharpValue, flatValue, 'LB and RB should apply different accidentals');
 
 await page.evaluate(() => window.__legatoOwner.editNote({ acc: null }, 'reset accidental for combo test'));
+await page.waitForTimeout(80);
 await combo();
 assert.equal(await page.evaluate(() => window.__legatoOwner.state.zone), 2, 'second LB+RB should leave the score');
 assert.equal(await page.evaluate(() => window.__legatoOwner.selected().acc), null, 'LB+RB should not apply either accidental');
