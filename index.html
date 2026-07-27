@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<script src="./support.js?v=20260727-c9e21a8"></script>
+<script src="./support.js?v=20260727-selection-live-2"></script>
 </head>
 <body>
 <x-dc>
@@ -3560,6 +3560,7 @@ class Component extends DCLogic {
     return { hidden: hidden, map: map };
   }
   renderVals() {
+    requestAnimationFrame(() => this.syncGlobalSelection());
     const s = this.state;
     const vis = this.visibility();
     this._vis = vis;
