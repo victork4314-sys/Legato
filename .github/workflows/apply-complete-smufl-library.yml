@@ -1,3 +1,4 @@
+# Clean verification pass against the already-committed app and catalog
 name: Apply complete SMuFL library and playback
 on:
   pull_request:
