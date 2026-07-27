@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 // Test the rendered Y command list exactly as a controller user sees it.
 const browser = await chromium.launch({ headless: true });
-const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+const context = await browser.newContext({ viewport: { width: 1024, height: 640 } });
 await context.addInitScript(() => {
   try { localStorage.setItem('legato.tour.v1', '1'); } catch (_) {}
 });
@@ -66,7 +66,7 @@ const scrollCheck = await page.evaluate(() => {
 });
 assert.ok(scrollCheck && scrollCheck.index >= 45, 'controller navigation should reach the bottom of a long command category');
 assert.equal(scrollCheck.visible, true, 'the selected command must scroll into view');
-assert.ok(scrollCheck.scrollTop > 0, 'the command panel must actually scroll');
+assert.ok(scrollCheck.scrollTop > 0, 'the command panel must actually scroll at compact screen height');
 
 // A clicked tile must apply itself, not the previously selected command.
 const dynamics = await categoryIndex('Dynamics');
