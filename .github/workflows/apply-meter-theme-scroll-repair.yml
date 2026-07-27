@@ -1,0 +1,39 @@
+name: Apply guarded Legato meter theme scroll repair
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/apply-meter-theme-scroll-repair.yml
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out safety branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/beam-meter-print-themes-scroll
+          fetch-depth: 0
+      - name: Apply guarded repair
+        run: python3 tools/apply_meter_theme_scroll_repairs.py
+      - name: Validate changed file
+        run: |
+          git diff --check
+          test "$(git diff --name-only | sort)" = "index.html"
+          grep -q "support.js?v=20260727-meter-themes-scroll-2" index.html
+          grep -q "const THEMES = \[" index.html
+          grep -q "data-print-score=\"true\"" index.html
+          grep -q "clip-path:polygon" index.html
+          ! grep -q "window.print(), 250" index.html
+          ! grep -q "levelUnit = Math.max(.125" index.html
+      - name: Commit only the repaired app file
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Fix meter beaming, score printing, themes and scrolling"
+          git push origin HEAD:fix/beam-meter-print-themes-scroll
