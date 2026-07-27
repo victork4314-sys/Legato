@@ -86,8 +86,8 @@ one(
 'fade active score banner')
 
 one(
-"        <span>LB / RB · ZONE</span>\n",
-"        <span>LB/RB · ACCIDENTAL · BOTH · SCORE</span>\n",
+"<span>LB / RB · ZONE</span>",
+"<span>LB/RB · ACCIDENTAL · BOTH · SCORE</span>",
 'bumper help text')
 
 old_poll = """      for (let i = 0; i < b.length; i++) {
