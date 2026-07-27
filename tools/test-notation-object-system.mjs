@@ -65,6 +65,21 @@ await page.evaluate(() => {
 await page.waitForTimeout(100);
 assert.equal(await page.evaluate(() => window.__legatoOwner.effectiveScoreEvent('dynamic', 0, 2).name), 'mf', 'dynamic should apply from its exact position');
 
+// Editable rehearsal/technique text.
+await page.evaluate(() => {
+  const o = window.__legatoOwner;
+  o.setState({ pos: 2.5, staff: 0 }, () => o.placeScoreEvent('technique', 'Playing technique', '', 'pizz.', { system: false, text: 'pizz.' }));
+});
+await page.waitForTimeout(80);
+let techniqueId = (await state()).events.find(x => x.type === 'technique').id;
+await page.evaluate(id => window.__legatoOwner.selectScoreObject(id), techniqueId);
+await page.evaluate(() => window.__legatoOwner.editSelectedScoreObject());
+await page.waitForTimeout(40);
+assert.equal(await page.evaluate(() => window.__legatoOwner.state.kb), 'scoreText', 'text object should open the score text keyboard field');
+await page.evaluate(() => window.__legatoOwner.setState({ scoreText: 'arco' }, () => window.__legatoOwner.finishScoreObjectText()));
+await page.waitForTimeout(80);
+assert.equal(await page.evaluate(id => window.__legatoOwner.scoreObjectById(id).text, techniqueId), 'arco', 'edited technique text should save');
+
 // Point one / point two spans.
 await page.evaluate(() => {
   const o = window.__legatoOwner;
@@ -72,10 +87,10 @@ await page.evaluate(() => {
 });
 await page.waitForTimeout(80);
 assert.ok((await state()).draft, 'slur point one should create a draft');
-await page.evaluate(() => window.__legatoOwner.setState({ pos: 3, staff: 0, step: 10 }, () => window.__legatoOwner.finishScoreSpan()));
+await page.evaluate(() => window.__legatoOwner.setState({ pos: 3, staff: 0, step: 10 }, () => window.__legatoOwner.dispatch('confirm', 'press')));
 await page.waitForTimeout(100);
 let snap = await state();
-assert.equal(snap.spans.length, 1, 'slur should finish as one saved span');
+assert.equal(snap.spans.length, 1, 'controller A should finish a saved slur span');
 assert.equal(snap.spans[0].p1, 0.5);
 assert.equal(snap.spans[0].p2, 3);
 
@@ -100,10 +115,7 @@ assert.ok(await page.evaluate(() => window.__legatoOwner.activeScoreSpan('hairpi
 // The command catalog must start a real two-point object, not decorate one note.
 await page.evaluate(() => {
   const o = window.__legatoOwner;
-  const ci = window.CAT ? window.CAT.findIndex(c => c[0] === 'Lines') : -1;
-  const cat = ci >= 0 ? ci : 6;
-  const idx = o.constructor ? 1 : 1;
-  o.setState({ halo: true, haloCat: cat, haloIdx: idx, pos: 5, staff: 0, spanDraft: null }, () => o.haloApply());
+  o.setState({ halo: true, haloCat: 6, haloIdx: 1, pos: 5, staff: 0, spanDraft: null }, () => o.haloApply());
 });
 await page.waitForTimeout(100);
 assert.ok((await state()).draft, 'choosing Slur in commands should set point one');
@@ -127,9 +139,9 @@ assert.equal(await page.evaluate(id => window.__legatoOwner.scoreObjectById(id).
 const dynamicId = (await state()).events.find(x => x.type === 'dynamic').id;
 await page.evaluate(id => window.__legatoOwner.selectScoreObject(id), dynamicId);
 await page.waitForTimeout(40);
-await page.evaluate(() => window.__legatoOwner.deleteScoreObject());
+await page.evaluate(() => window.__legatoOwner.dispatch('delete', 'press'));
 await page.waitForTimeout(80);
-assert.equal(await page.evaluate(() => window.__legatoOwner.state.scoreEvents.some(x => x.type === 'dynamic')), false, 'selected point event should delete');
+assert.equal(await page.evaluate(() => window.__legatoOwner.state.scoreEvents.some(x => x.type === 'dynamic')), false, 'controller B should delete a selected point event');
 
 // DOM and persistence.
 await page.waitForFunction(() => document.querySelectorAll('[data-score-object="true"]').length >= 5, null, { timeout: 10000 });
@@ -137,7 +149,66 @@ const rendered = await page.locator('[data-score-object="true"]').count();
 assert.ok(rendered >= 5, 'point events and spans should render as score objects');
 snap = await state();
 assert.ok(Array.isArray(snap.doc.scoreEvents) && Array.isArray(snap.doc.scoreSpans), 'events and spans should be saved in project documents');
-assert.ok(snap.doc.scoreEvents.length >= 4 && snap.doc.scoreSpans.length >= 3, 'saved document should contain placed notation');
+assert.ok(snap.doc.scoreEvents.length >= 5 && snap.doc.scoreSpans.length >= 3, 'saved document should contain placed notation');
 
-console.log('Live notation object checks passed', JSON.stringify({ events: snap.doc.scoreEvents.length, spans: snap.doc.scoreSpans.length, rendered }));
+// MIDI should include a header and use the new tempo-event path without downloading.
+await page.evaluate(() => {
+  const o = window.__legatoOwner;
+  o.download = (name, mime, data) => { window.__midiCapture = { name, mime, length: data.length, head: Array.from(data.slice(0, 4)) }; };
+  o.exportMidi();
+});
+await page.waitForTimeout(80);
+const midi = await page.evaluate(() => window.__midiCapture);
+assert.ok(midi && midi.name.endsWith('.mid') && midi.length > 30, 'MIDI export should produce a non-empty file');
+assert.deepEqual(midi.head, [77, 84, 104, 100], 'MIDI should begin with MThd');
+
+// Removing a player must remove/shift its notation ownership.
+await page.evaluate(() => {
+  const o = window.__legatoOwner;
+  const last = o.state.players.length - 1;
+  o.setState({ staff: last, pos: 1 }, () => {
+    o.placeScoreEvent('technique', 'Last staff technique', '', 'mute', { system: false, text: 'mute' });
+    o.setState({ pos: 1.5 }, () => o.beginScoreSpan('pedal', 'Last staff pedal', '\uE650'));
+  });
+});
+await page.waitForTimeout(100);
+await page.evaluate(() => window.__legatoOwner.setState({ pos: 2.5 }, () => window.__legatoOwner.finishScoreSpan()));
+await page.waitForTimeout(80);
+const beforePlayers = await page.evaluate(() => window.__legatoOwner.state.players.length);
+await page.evaluate(() => window.__legatoOwner.removePlayer(window.__legatoOwner.state.players.length - 1));
+await page.waitForTimeout(100);
+assert.equal(await page.evaluate(() => window.__legatoOwner.state.players.length), beforePlayers - 1, 'player removal should complete');
+assert.equal(await page.evaluate(() => {
+  const o = window.__legatoOwner, max = o.state.players.length - 1;
+  return o.state.scoreEvents.some(x => !x.system && x.s > max) || o.state.scoreSpans.some(x => !x.system && (x.s1 > max || x.s2 > max));
+}), false, 'removed-player notation must not become orphaned');
+
+// Removing the final measure clips/removes objects beyond the new end.
+await page.evaluate(() => {
+  const o = window.__legatoOwner;
+  o.setState({ bars: 4, staff: 0, pos: 15 }, () => o.placeScoreEvent('text', 'late', '', 'late', { system: false, text: 'late' }));
+});
+await page.waitForTimeout(60);
+await page.evaluate(() => {
+  const o = window.__legatoOwner;
+  o.setState({ pos: 14 }, () => o.beginScoreSpan('line', 'Late line', '—'));
+});
+await page.waitForTimeout(50);
+await page.evaluate(() => window.__legatoOwner.setState({ pos: 15.5 }, () => window.__legatoOwner.finishScoreSpan()));
+await page.waitForTimeout(60);
+await page.evaluate(() => window.__legatoOwner.runOp('Remove last measure'));
+await page.waitForTimeout(100);
+assert.equal(await page.evaluate(() => window.__legatoOwner.state.bars), 3, 'last measure should be removed');
+assert.equal(await page.evaluate(() => {
+  const o = window.__legatoOwner, end = o.state.bars * o.barCapacity();
+  return o.state.scoreEvents.some(x => x.p >= end) || o.state.scoreSpans.some(x => x.p1 >= end || x.p2 >= end);
+}), false, 'notation beyond the removed measure must be removed or clipped');
+
+// A new project must be genuinely empty.
+await page.evaluate(() => window.__legatoOwner.newProject());
+await page.waitForTimeout(100);
+assert.equal(await page.evaluate(() => window.__legatoOwner.state.scoreEvents.length), 0, 'new project should clear point events');
+assert.equal(await page.evaluate(() => window.__legatoOwner.state.scoreSpans.length), 0, 'new project should clear spans');
+
+console.log('Live notation object checks passed', JSON.stringify({ rendered, midiBytes: midi.length, playerCleanup: true, measureCleanup: true }));
 await browser.close();
