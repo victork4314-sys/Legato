@@ -56,11 +56,29 @@ jobs:
           npm install playwright@1.55.0
           npx playwright install --with-deps chromium
       - name: Run live bumper interaction checks
+        id: browser
+        continue-on-error: true
         run: |
           python3 -m http.server 4173 >/tmp/legato-http.log 2>&1 &
           SERVER_PID=$!
           trap 'kill $SERVER_PID || true' EXIT
-          node tools/test-bumper-score-toggle.mjs
+          set +e
+          node tools/test-bumper-score-toggle.mjs > tools/bumper-browser-result.txt 2>&1
+          CODE=$?
+          echo $CODE > tools/bumper-browser-exit.txt
+          cat tools/bumper-browser-result.txt
+          exit 0
+      - name: Commit exact browser diagnostic when needed
+        run: |
+          if [ "$(cat tools/bumper-browser-exit.txt)" != "0" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add tools/bumper-browser-result.txt tools/bumper-browser-exit.txt
+            git commit -m "Capture bumper browser test failure" || true
+            git push origin HEAD:fix/bumper-score-toggle
+          fi
+      - name: Stop on browser failure
+        run: test "$(cat tools/bumper-browser-exit.txt)" = "0"
       - name: Commit repaired app
         run: |
           git config user.name "github-actions[bot]"
