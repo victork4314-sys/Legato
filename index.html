@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<script src="./support.js?v=20260727-selection-live-2"></script>
+<script src="./support.js?v=20260727-real-dom-scan-1"></script>
 </head>
 <body>
 <x-dc>
@@ -1243,41 +1243,36 @@ class Component extends DCLogic {
   componentDidUpdate() {
     requestAnimationFrame(() => this.syncGlobalSelection());
   }
+  visibleScanItems() {
+    return Array.from(document.querySelectorAll('[data-ptr]')).filter(el => {
+      if (el.offsetParent === null) return false;
+      if (el.closest('[data-scroll="score"]')) return false;
+      if (el.getAttribute('aria-hidden') === 'true' || el.getAttribute('aria-disabled') === 'true') return false;
+      const r = el.getBoundingClientRect();
+      return r.width > 0 && r.height > 0;
+    });
+  }
+  zoneScanItems(zone) {
+    const all = this.visibleScanItems();
+    return all.filter(el => {
+      const r = el.getBoundingClientRect();
+      if (zone === 0) return r.top < 120;
+      if (zone === 1) return r.right <= 360 && r.top >= 70;
+      if (zone === 2) return r.top >= 70 && r.top < 235;
+      if (zone === 4) return r.left >= window.innerWidth - 430 && r.top >= 70;
+      return false;
+    });
+  }
   syncGlobalSelection() {
-    const nodes = Array.from(document.querySelectorAll('[data-ptr]'));
-    nodes.forEach(el => el.removeAttribute('data-scan-selected'));
+    document.querySelectorAll('[data-scan-selected="true"]').forEach(el => el.removeAttribute('data-scan-selected'));
     if (this.state.zone === 3) return;
-    const list = this.focusList(), item = list[this.state.focus];
-    if (!item || !item.label) return;
-    const norm = value => String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
-    const stop = new Set(['a','an','the','to','of','on','or','and','this','that','with','as','you','move','set']);
-    const tokens = value => norm(value).split(' ').filter(x => x && !stop.has(x));
-    const wanted = norm(item.label), wantedTokens = tokens(item.label);
-    const visible = nodes.filter(el => el.offsetParent !== null);
-    let target = visible.find(el => norm(el.getAttribute('data-ptr')) === wanted)
-      || visible.find(el => { const label = norm(el.getAttribute('data-ptr')); return label && (label.includes(wanted) || wanted.includes(label)); });
-    if (!target) {
-      let best = null, bestScore = -1;
-      visible.forEach(el => {
-        const labelTokens = tokens(el.getAttribute('data-ptr'));
-        const overlap = wantedTokens.filter(x => labelTokens.includes(x)).length;
-        const score = overlap * 10 - Math.abs(labelTokens.length - wantedTokens.length);
-        if (overlap && score > bestScore) { best = el; bestScore = score; }
-      });
-      target = best;
-    }
-    if (!target) {
-      const region = visible.filter(el => {
-        const r = el.getBoundingClientRect();
-        if (this.state.zone === 0) return r.top < 115;
-        if (this.state.zone === 1) return r.right < 360;
-        if (this.state.zone === 2) return r.top >= 70 && r.top < 230;
-        if (this.state.zone === 4) return r.left > window.innerWidth - 420;
-        return false;
-      });
-      target = region[this.state.focus % Math.max(1, region.length)] || null;
-    }
-    if (target) target.setAttribute('data-scan-selected', 'true');
+    const items = this.state.autoScan ? this.visibleScanItems() : this.zoneScanItems(this.state.zone);
+    if (!items.length) return;
+    const raw = this.state.autoScan ? (this._domScanIndex == null ? 0 : this._domScanIndex) : this.state.focus;
+    const index = ((raw % items.length) + items.length) % items.length;
+    const target = items[index];
+    target.setAttribute('data-scan-selected', 'true');
+    this.reveal(target);
   }
 
   get bindings() {
@@ -3254,6 +3249,7 @@ class Component extends DCLogic {
     if (this._autoScanTimer) clearInterval(this._autoScanTimer);
     this._autoScanTimer = null;
     if (!this.state.autoScan) return;
+    this._domScanIndex = -1;
     this._autoScanTimer = setInterval(() => this.advanceAutoScan(), 1200);
   }
   toggleAutoScan() {
@@ -3281,14 +3277,22 @@ class Component extends DCLogic {
     return targets;
   }
   advanceAutoScan() {
-    if (!this.state.autoScan || this.anyOverlay() || this.state.ptrOn) return;
-    const targets = this.autoScanTargets();
-    if (!targets.length) return;
-    const s = this.state;
-    let index = targets.findIndex(t => t.zone === s.zone && t.mode === s.mode && t.focus === s.focus);
-    index = (index + 1 + targets.length) % targets.length;
-    const next = targets[index];
-    this.setState({ zone: next.zone, mode: next.mode, focus: next.focus, spoken: next.label });
+    if (!this.state.autoScan) return;
+    const items = this.visibleScanItems();
+    if (!items.length) return;
+    let next = (this._domScanIndex == null ? -1 : this._domScanIndex) + 1;
+    if (next >= items.length) {
+      const nextMode = (this.state.mode + 1) % 6;
+      this._domScanIndex = -1;
+      return this.setState({ mode: nextMode, zone: 2, focus: 0 }, () => requestAnimationFrame(() => this.advanceAutoScan()));
+    }
+    this._domScanIndex = next;
+    const target = items[next];
+    document.querySelectorAll('[data-scan-selected="true"]').forEach(el => el.removeAttribute('data-scan-selected'));
+    target.setAttribute('data-scan-selected', 'true');
+    this.reveal(target);
+    const label = target.getAttribute('data-ptr') || target.getAttribute('aria-label') || target.textContent.trim() || 'Item';
+    this.setState({ spoken: label });
   }
 
   focusList() {
@@ -3376,6 +3380,8 @@ class Component extends DCLogic {
     });
   }
   activateFocus() {
+    const liveTarget = document.querySelector('[data-scan-selected="true"]');
+    if (liveTarget && this.state.zone !== 3) { liveTarget.click(); return; }
     const list = this.focusList(), it = list[this.state.focus];
     if (!it) return;
     if (it.t === 'padd') {
