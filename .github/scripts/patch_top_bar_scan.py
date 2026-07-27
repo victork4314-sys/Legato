@@ -11,6 +11,23 @@ def replace_once(old, new, label):
         raise SystemExit(f'{label}: expected 1 match, found {count}')
     text = text.replace(old, new, 1)
 
+
+def append_ring_to_style(name, index):
+    global text
+    needle = name + ':'
+    pos = text.find(needle)
+    if pos < 0:
+        raise SystemExit(f'{name} binding not found')
+    line_end = text.find('\n', pos)
+    line = text[pos:line_end]
+    ring = f"this.ring('top', {index})"
+    if ring in line:
+        return
+    if not line.rstrip().endswith(','):
+        raise SystemExit(f'unexpected {name} line shape')
+    updated = line.rstrip()[:-1] + f' + {ring},'
+    text = text[:pos] + updated + text[line_end:]
+
 replace_once(
 '''      <div onClick="{{ openMenu }}" data-ptr="File menu" style="display: flex; align-items: center; gap: 7px; padding: 4px 10px; border: 1px solid #2b3230; border-radius: 5px; background: #121615; cursor: pointer;" style-hover="border-color:#3c4441">''',
 '''      <div onClick="{{ openMenu }}" data-ptr="File menu" style="{{ fileMenuStyle }}" style-hover="border-color:#3c4441">''',
@@ -49,25 +66,9 @@ replace_once(
 '''      autoScanToggleStyle: 'display:flex;align-items:center;gap:7px;padding:5px 10px;border:1px solid ' + (s.autoScan ? accent : '#2b3230') + ';border-radius:5px;background:' + (s.autoScan ? 'rgba(116,161,46,.12)' : '#121615') + ';cursor:pointer;' + this.ring('top', 2),''',
 'auto scan ring index')
 
-replace_once(
-'''      modeBadgeStyle: 'display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:5px;border:1px solid ' + (s.hub || s.panel ? '#f0b429' : accent) + ';background:' + (s.hub || s.panel ? 'rgba(240,180,41,.14)' : 'rgba(116,161,46,.12)') + ';cursor:pointer;', ''',
-'''      modeBadgeStyle: 'display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:5px;border:1px solid ' + (s.hub || s.panel ? '#f0b429' : accent) + ';background:' + (s.hub || s.panel ? 'rgba(240,180,41,.14)' : 'rgba(116,161,46,.12)') + ';cursor:pointer;' + this.ring('top', 3), ''',
-'menu ring style')
+append_ring_to_style('ptrChipStyle', 0)
+append_ring_to_style('modeBadgeStyle', 3)
 
-# Pointer style is built dynamically; append its top-bar focus ring without changing its existing behavior.
-needle = "ptrChipStyle:"
-pos = text.find(needle)
-if pos < 0:
-    raise SystemExit('pointer style binding not found')
-line_end = text.find('\n', pos)
-line = text[pos:line_end]
-if "this.ring('top', 0)" not in line:
-    if not line.rstrip().endswith(','):
-        raise SystemExit('unexpected pointer style line shape')
-    updated = line.rstrip()[:-1] + " + this.ring('top', 0),"
-    text = text[:pos] + updated + text[line_end:]
-
-# Add the dynamic File button focus style beside the existing top-bar styles.
 marker = "      autoScanToggleStyle: 'display:flex;align-items:center;gap:7px;padding:5px 10px;border:1px solid ' + (s.autoScan ? accent : '#2b3230') + ';border-radius:5px;background:' + (s.autoScan ? 'rgba(116,161,46,.12)' : '#121615') + ';cursor:pointer;' + this.ring('top', 2),\n"
 if text.count(marker) != 1:
     raise SystemExit('file style insertion marker mismatch')
@@ -77,6 +78,7 @@ required = [
     "{ t: 'top', i: 0, label: s.ptrOn ? 'Turn pointer off' : 'Turn pointer on' }",
     "{ t: 'top', i: 4, label: 'Open the file menu' }",
     "this.ring('top', 0)",
+    "this.ring('top', 3)",
     "this.ring('top', 4)",
     'style="{{ fileMenuStyle }}"'
 ]
