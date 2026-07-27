@@ -44,7 +44,23 @@ jobs:
               raise SystemExit('No embedded JavaScript found')
           Path('/tmp/legato-notation-objects.js').write_text('\n'.join(blocks), encoding='utf-8')
           PY
-          node --check /tmp/legato-notation-objects.js
+          set +e
+          node --check /tmp/legato-notation-objects.js > tools/notation-syntax.txt 2>&1
+          CODE=$?
+          echo $CODE > tools/notation-syntax-exit.txt
+          cat tools/notation-syntax.txt
+          exit 0
+      - name: Commit exact syntax diagnostic when needed
+        run: |
+          if [ "$(cat tools/notation-syntax-exit.txt)" != "0" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add tools/notation-syntax.txt tools/notation-syntax-exit.txt
+            git commit -m "Capture notation syntax failure" || true
+            git push origin HEAD:fix/notation-object-system
+          fi
+      - name: Stop on syntax failure
+        run: test "$(cat tools/notation-syntax-exit.txt)" = "0"
       - name: Verify notation and controller guards
         run: |
           python3 - <<'PY'
