@@ -23,7 +23,7 @@ jobs:
       - name: Apply guarded repair
         id: apply
         continue-on-error: true
-        run: python3 tools/apply_meter_theme_scroll_repairs.py > /tmp/legato-repair.log 2>&1
+        run: python3 tools/run_meter_theme_scroll_repairs.py > /tmp/legato-repair.log 2>&1
       - name: Show exact repair result
         if: always()
         run: cat /tmp/legato-repair.log
