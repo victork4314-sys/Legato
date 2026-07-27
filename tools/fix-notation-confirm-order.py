@@ -3,9 +3,9 @@ from pathlib import Path
 p = Path('index.html')
 t = p.read_text(encoding='utf-8')
 
-marker = "if (s.spanDraft && action === 'confirm') return this.finishScoreSpan();"
-if marker in t:
-    print('Exclusive notation confirm priority already repaired')
+marker = "if (s.scoreObjectId && action === 'delete') return this.deleteScoreObject();"
+if marker in t and "if (s.scoreObjectId && action === 'confirm') return this.editSelectedScoreObject();" in t:
+    print('Exclusive notation controller priority already repaired')
     raise SystemExit(0)
 
 release = "    if (phase === 'release') { if (action === 'select-modifier') this._mod = false; return; }\n"
@@ -15,6 +15,10 @@ early = release + """    if (s.spanDraft && action === 'confirm') return this.fi
       if (target && target.id !== s.tieFrom) return this.finishTie(target);
       return this.setState({ spoken: 'Tie point two is waiting for A — move to the immediately following note of the same pitch' });
     }
+    if (s.scoreObjectId && action === 'confirm') return this.editSelectedScoreObject();
+    if (s.tieFrom && action === 'delete') return this.setState({ tieFrom: null, spoken: 'Tie cancelled' });
+    if (s.spanDraft && action === 'delete') return this.cancelScoreSpan();
+    if (s.scoreObjectId && action === 'delete') return this.deleteScoreObject();
 """
 if t.count(release) != 1:
     raise SystemExit(f'dispatch release marker: expected 1 match, found {t.count(release)}')
@@ -46,7 +50,6 @@ reordered_confirm = """      case 'confirm':
 """
 clean_confirm = """      case 'confirm':
         if (P) { this.clickPointer(); break; }
-        if (s.scoreObjectId) { this.editSelectedScoreObject(); break; }
         this.enterNote(); break;
 """
 if old_confirm in t:
@@ -67,4 +70,4 @@ if t.count(old_begin) != 1:
 t = t.replace(old_begin, new_begin, 1)
 
 p.write_text(t, encoding='utf-8')
-print('Exclusive notation confirm priority repaired')
+print('Exclusive notation controller priority repaired')
