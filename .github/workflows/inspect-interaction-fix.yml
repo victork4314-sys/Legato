@@ -1,0 +1,17 @@
+name: Inspect interaction repair
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - index.html
+      - tools/inspect-interaction-fix.sh
+      - .github/workflows/inspect-interaction-fix.yml
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/rests-ties-score-focus-fonts
+      - name: Show exact repair targets
+        run: bash tools/inspect-interaction-fix.sh
