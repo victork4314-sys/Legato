@@ -1,9 +1,11 @@
+before LB {"zone":3,"selId":"nuf6nsv","accidental":null,"comboLatched":false,"pending4":null,"pending5":null,"previous":[false,false],"spoken":"reset accidental for test"}
+after LB {"zone":3,"selId":"nuf6nsv","accidental":null,"comboLatched":false,"pending4":null,"pending5":null,"previous":[false,false],"spoken":"reset accidental for test"}
 node:internal/modules/run_main:123
     triggerUncaughtException(
     ^
 
 AssertionError [ERR_ASSERTION]: LB alone should still apply an accidental
-    at file:///home/runner/work/Legato/Legato/tools/test-bumper-score-toggle.mjs:61:8 {
+    at file:///home/runner/work/Legato/Legato/tools/test-bumper-score-toggle.mjs:87:8 {
   generatedMessage: false,
   code: 'ERR_ASSERTION',
   actual: null,
