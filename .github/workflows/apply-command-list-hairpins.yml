@@ -20,30 +20,11 @@ jobs:
 
       - name: Apply guarded repair
         run: |
-          set +e
           if grep -q '20260727-command-list-hairpins-1' index.html; then
-            echo 'Command list and hairpin repair already applied' > tools/command-list-patch.txt
-            CODE=0
+            echo 'Command list and hairpin repair already applied'
           else
-            python3 tools/apply-command-list-hairpin-fix-v2.py > tools/command-list-patch.txt 2>&1
-            CODE=$?
+            python3 tools/apply-command-list-hairpin-fix-v2.py
           fi
-          echo "$CODE" > tools/command-list-patch-exit.txt
-          cat tools/command-list-patch.txt
-          exit 0
-
-      - name: Commit exact patch diagnostic when needed
-        run: |
-          if [ "$(cat tools/command-list-patch-exit.txt)" != "0" ]; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add tools/command-list-patch.txt tools/command-list-patch-exit.txt
-            git commit -m "Capture command list patch failure" || true
-            git push origin HEAD:fix/command-list-scroll-hairpins
-          fi
-
-      - name: Stop on patch failure
-        run: test "$(cat tools/command-list-patch-exit.txt)" = "0"
 
       - name: Check embedded JavaScript syntax
         run: |
@@ -103,25 +84,7 @@ jobs:
           python3 -m http.server 4173 >/tmp/legato-http.log 2>&1 &
           SERVER_PID=$!
           trap 'kill $SERVER_PID || true' EXIT
-          set +e
-          node tools/test-command-list-hairpins.mjs > tools/command-list-browser.txt 2>&1
-          CODE=$?
-          echo "$CODE" > tools/command-list-browser-exit.txt
-          cat tools/command-list-browser.txt
-          exit 0
-
-      - name: Commit exact browser diagnostic when needed
-        run: |
-          if [ "$(cat tools/command-list-browser-exit.txt)" != "0" ]; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add tools/command-list-browser.txt tools/command-list-browser-exit.txt
-            git commit -m "Capture command list browser failure" || true
-            git push origin HEAD:fix/command-list-scroll-hairpins
-          fi
-
-      - name: Stop on browser failure
-        run: test "$(cat tools/command-list-browser-exit.txt)" = "0"
+          node tools/test-command-list-hairpins.mjs
 
       - name: Commit repaired app
         run: |
