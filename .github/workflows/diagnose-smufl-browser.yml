@@ -1,3 +1,4 @@
+# Re-run after generated test moved beside repository node_modules
 name: Diagnose final SMuFL browser assertion
 on:
   pull_request:
