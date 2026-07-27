@@ -1,1 +1,7 @@
-controller theme focus list: expected exactly one match, found 2
+print score marker duplicated or missing
+Traceback (most recent call last):
+  File "/home/runner/work/Legato/Legato/tools/run_meter_theme_scroll_repairs.py", line 11, in <module>
+    subprocess.run(['python3', str(patch)], check=True)
+  File "/usr/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['python3', 'tools/apply_meter_theme_scroll_repairs.py']' returned non-zero exit status 1.
