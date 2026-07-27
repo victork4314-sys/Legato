@@ -140,7 +140,18 @@ jobs:
           python3 -m http.server 4173 >/tmp/legato-http.log 2>&1 &
           SERVER_PID=$!
           trap 'kill $SERVER_PID || true' EXIT
-          node tools/test_complete_library.mjs
+          set +e
+          node tools/test_complete_library.mjs > tools/complete-library-browser.txt 2>&1
+          CODE=$?
+          cat tools/complete-library-browser.txt
+          if [ "$CODE" -ne 0 ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add tools/complete-library-browser.txt
+            git commit -m "Capture complete-library browser assertion" || true
+            git push origin HEAD:feature/complete-smufl-library-playback-selector
+          fi
+          exit "$CODE"
 
       - name: Commit generated catalog and repaired app
         run: |
