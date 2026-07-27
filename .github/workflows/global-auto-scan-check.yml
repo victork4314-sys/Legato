@@ -6,26 +6,23 @@ on:
       - .global-auto-scan-trigger
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  patch-and-test:
+  test:
     if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
-          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - name: Apply guarded patch
-        run: python .github/scripts/patch_global_auto_scan.py
-      - name: Verify scope and syntax
+      - name: Verify source and syntax
         run: |
-          git diff --check
-          git diff --name-only | grep -qx 'index.html'
+          grep -q 'autoScanTargets()' index.html
+          grep -q 'for (let mode = 0; mode < 6; mode++)' index.html
           python - <<'PY'
           import re
           from pathlib import Path
@@ -77,10 +74,3 @@ jobs:
             await browser.close();
           })().catch(e => { console.error(e); process.exit(1); });
           JS
-      - name: Commit verified patch
-        run: |
-          git config user.name "Legato maintenance"
-          git config user.email "actions@users.noreply.github.com"
-          git add index.html
-          git commit -m "Auto scan every item across all bars"
-          git push origin HEAD:${{ github.head_ref }}
