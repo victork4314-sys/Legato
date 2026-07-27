@@ -1,23 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 for needle in \
-  "toggleTie()" \
+  "toggleTie" \
+  "focusList" \
+  "activateFocus" \
+  "componentDidUpdate" \
+  "data-score-caret" \
+  "tieStyle" \
   "autoRests:" \
-  "focusList()" \
-  "activateFocus()" \
-  "function midiFor" \
-  "timeTopStyle:" \
   "staffHits:" \
-  "componentDidUpdate()" \
-  "const DOC_KEYS" \
-  "constructor(props)" \
-  "themeRows:" \
+  "timeTopStyle:" \
   "setupRows:" \
-  "previous-zone':" \
-  "selectNote(" \
-  "enterNote()" \
-  "tieStyle:" \
-  "data-score-caret"; do
-  printf '%-28s ' "$needle"
-  grep -nF "$needle" index.html | head -1 || true
+  "themeRows:"; do
+  echo "===== $needle ====="
+  grep -nF "$needle" index.html || true
+  echo
 done
