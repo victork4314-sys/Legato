@@ -1,0 +1,114 @@
+name: Final SMuFL semantic correction suite
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - index.html
+      - smufl-catalog.js
+      - tools/correct_smufl_semantics.py
+      - tools/correct_smufl_semantics_v2.py
+      - tools/correct_smufl_semantics_v3.py
+      - tools/correct_smufl_semantics_v4.py
+      - tools/correct_smufl_semantics_v5.py
+      - tools/apply_semantic_playback_corrections.py
+      - tools/apply_semantic_playback_corrections_v2.py
+      - tools/apply_semantic_playback_corrections_v3.py
+      - tools/apply_semantic_playback_corrections_v4.py
+      - tools/apply_semantic_playback_corrections_v5.py
+      - tools/audit_corrected_catalog.py
+      - tools/audit_corrected_catalog_v3.py
+      - tools/test_smufl_semantic_corrections.mjs
+      - tools/test_smufl_semantic_corrections_v4.mjs
+      - .github/workflows/apply-smufl-semantic-corrections-final.yml
+permissions:
+  contents: write
+jobs:
+  final-correct-audit-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/smufl-semantic-audit-corrections
+
+      - name: Correct complete catalog semantics
+        run: python3 tools/correct_smufl_semantics_v5.py
+
+      - name: Apply final corrected playback runtime
+        run: python3 tools/apply_semantic_playback_corrections_v5.py
+
+      - name: Run complete named catalog audit
+        run: python3 tools/audit_corrected_catalog_v3.py
+
+      - name: Check catalog and all embedded JavaScript
+        run: |
+          node --check smufl-catalog.js
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          text = Path('index.html').read_text(encoding='utf-8')
+          blocks = re.findall(r'<script[^>]*>([\s\S]*?)</script>', text)
+          if not blocks:
+              raise SystemExit('No embedded JavaScript found')
+          Path('/tmp/legato-final-semantic-corrections.js').write_text('\n'.join(blocks), encoding='utf-8')
+          PY
+          node --check /tmp/legato-final-semantic-corrections.js
+
+      - name: Verify cache, final semantic runtime, and protected controls
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          text = Path('index.html').read_text(encoding='utf-8')
+          required = [
+              '<meta name="legato-build" content="20260727-complete-smufl-playback-2">',
+              '<script src="./cache-refresh.js?v=20260727-complete-smufl-playback-2"></script>',
+              '<script src="./smufl-catalog.js?v=20260727-complete-smufl-playback-2"></script>',
+              '<script src="./support.js?v=20260727-complete-smufl-playback-2"></script>',
+              "meta.direction === 'swell' ? 'hairpin-swell'",
+              "if (meta.kind === 'electronic')",
+              "if (meta.kind === 'pedal' && meta.placement === 'event')",
+              'activePedalEvent(staff, pos, state)',
+              'nextPedalRelease(staff, pos, state)',
+              'activeElectronic(pos, state)',
+              'techniquePlaybackProfile(staff, pos, note, state)',
+              'harmonicShift',
+              "effect === 'mute' || effect === 'stop'",
+              "effect === 'level' && electronic.playback.level != null",
+              "ev.playback.electronic === 'pause'",
+              'LEGACY_REALISED_GLYPHS',
+              'semantic && !LEGACY_REALISED_GLYPHS[g]',
+              "button4: 'previous-zone', button5: 'next-zone'",
+              'const BUMPER_COMBO_MS = 120;',
+              "case 'previous-zone': if (s.zone === 3 && s.selId) { this.nudgeAccidental(-1); break; } this.cycleVisibleZone(-1); break;",
+              "case 'next-zone': if (s.zone === 3 && s.selId) { this.nudgeAccidental(1); break; } this.cycleVisibleZone(1); break;"
+          ]
+          for marker in required:
+              if marker not in text:
+                  raise SystemExit('Missing required marker: ' + marker)
+          if text.count('20260727-complete-smufl-playback-2') != 4:
+              raise SystemExit('The corrected build must appear exactly four times')
+          if '20260727-complete-smufl-playback-1' in text:
+              raise SystemExit('The stale complete-library build remains')
+          print('Final semantic runtime and protected-controller guards passed')
+          PY
+
+      - name: Install browser runtime
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Run final corrected semantics in Chromium
+        run: |
+          python3 -m http.server 4173 >/tmp/legato-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID || true' EXIT
+          node tools/test_smufl_semantic_corrections_v4.mjs
+
+      - name: Commit final corrected app and catalog
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html smufl-catalog.js
+          git diff --cached --quiet || git commit -m "Correct complete SMuFL playback semantics"
+          git push origin HEAD:fix/smufl-semantic-audit-corrections
