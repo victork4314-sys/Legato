@@ -18,7 +18,7 @@ jobs:
           ref: ${{ github.head_ref }}
           fetch-depth: 0
       - name: Apply guarded patch
-        run: python .github/scripts/patch_sidebar_scan.py
+        run: python .github/scripts/run_sidebar_patch.py
       - name: Verify exact scope
         shell: bash
         run: |
