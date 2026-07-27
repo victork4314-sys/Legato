@@ -5,6 +5,7 @@ on:
     paths:
       - index.html
       - tools/apply-command-list-hairpin-fix.py
+      - tools/apply-command-list-hairpin-fix-v2.py
       - tools/test-command-list-hairpins.mjs
       - .github/workflows/apply-command-list-hairpins.yml
 permissions:
@@ -24,7 +25,7 @@ jobs:
             echo 'Command list and hairpin repair already applied' > tools/command-list-patch.txt
             CODE=0
           else
-            python3 tools/apply-command-list-hairpin-fix.py > tools/command-list-patch.txt 2>&1
+            python3 tools/apply-command-list-hairpin-fix-v2.py > tools/command-list-patch.txt 2>&1
             CODE=$?
           fi
           echo "$CODE" > tools/command-list-patch-exit.txt
