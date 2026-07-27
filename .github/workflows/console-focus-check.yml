@@ -1,0 +1,85 @@
+name: Console focus navigation check
+on:
+  pull_request:
+    paths:
+      - .console-focus-trigger
+permissions:
+  contents: write
+jobs:
+  patch-test-commit:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Apply guarded patch
+        run: python .github/scripts/console_focus_patch.py
+      - name: Verify source and syntax
+        run: |
+          git diff --check
+          git diff --name-only | grep -qx index.html
+          grep -q 'support.js?v=20260727-console-focus-1' index.html
+          python - <<'PY'
+          import re
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          m=re.findall(r'<script\b[^>]*\bdata-dc-script\b[^>]*>(.*?)</script>',s,re.S)
+          if len(m)!=1: raise SystemExit('script block mismatch')
+          Path('/tmp/legato.js').write_text(m[0])
+          PY
+          node --check /tmp/legato.js
+      - name: Install browser runtime
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@latest >/dev/null 2>&1
+          npx playwright install --with-deps chromium >/dev/null 2>&1
+      - name: Test normal console focus and complete right sidebar
+        run: |
+          cat > /tmp/test.js <<'JS'
+          const { chromium } = require('playwright');
+          const fs = require('fs');
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            const page=await browser.newPage({viewport:{width:1600,height:1000}});
+            await page.setContent(fs.readFileSync('index.html','utf8'),{waitUntil:'domcontentloaded'});
+            await page.waitForTimeout(1000);
+            const result=await page.evaluate(async()=>{
+              const owner=window.__legatoOwner;
+              if(!owner) throw new Error('owner missing');
+              const modes=[];
+              for(let mode=0;mode<6;mode++){
+                owner.setState({mode,sidebarsHidden:false,zone:4,focus:0});
+                await new Promise(r=>setTimeout(r,80));
+                const right=owner.zoneScanItems(4);
+                if(!right.length) throw new Error('right sidebar empty in mode '+mode);
+                const visibleRight=[...document.querySelectorAll('[data-scroll="props"] [data-ptr]')].filter(el=>el.offsetParent!==null && ![...document.querySelectorAll('[data-scroll="props"] [data-ptr]')].some(other=>other!==el&&other.offsetParent!==null&&el.contains(other)));
+                if(right.length!==visibleRight.length) throw new Error(`right sidebar incomplete in mode ${mode}: ${right.length}/${visibleRight.length}`);
+                for(const el of right){owner.focusDomItem(el);await new Promise(r=>setTimeout(r,5));const selected=document.querySelectorAll('[data-scan-selected="true"]');if(selected.length!==1||selected[0]!==el)throw new Error('not exactly one selected');}
+                modes.push(right.length);
+              }
+              owner.setState({mode:1,zone:2,focus:0}); await new Promise(r=>setTimeout(r,80));
+              const start=owner.zoneScanItems(2)[0]; owner.focusDomItem(start); owner.moveConsoleFocus(1,0); await new Promise(r=>setTimeout(r,30));
+              const selected=document.querySelector('[data-scan-selected="true"]');
+              if(!selected) throw new Error('left/right lost focus');
+              const zone=owner.scanZoneForElement(selected);
+              if(zone!==2&&zone!==4) throw new Error('right movement did not stay predictable');
+              if(document.querySelectorAll('[data-scan-selected="true"]').length!==1)throw new Error('multiple highlights');
+              return modes;
+            });
+            console.log('right sidebar controls per mode:',result.join(','));
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          JS
+          node /tmp/test.js
+      - name: Commit verified app change
+        run: |
+          git config user.name 'Legato maintenance'
+          git config user.email 'actions@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Use normal console focus navigation'
+          git push
