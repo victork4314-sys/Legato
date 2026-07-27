@@ -4,12 +4,12 @@
   const HOLD_MS = 360;
   const canon = (m, n) => {
     const t = [m && m.id, m && m.label, n].filter(Boolean).join(" ").toLowerCase();
-    if (/segno/.test(t)) return "Segno";
+    if (/da.?capo|d\.c\./.test(t)) return /coda/.test(t) ? "D.C. al Coda" : /fine/.test(t) ? "D.C. al Fine" : "D.C.";
+    if (/dal.?segno|d\.s\./.test(t)) return /coda/.test(t) ? "D.S. al Coda" : /fine/.test(t) ? "D.S. al Fine" : "D.S.";
     if (/to.?coda/.test(t)) return "To Coda";
     if (/coda/.test(t)) return "Coda";
     if (/fine/.test(t)) return "Fine";
-    if (/da.?capo|d\.c\./.test(t)) return /coda/.test(t) ? "D.C. al Coda" : /fine/.test(t) ? "D.C. al Fine" : "D.C.";
-    if (/dal.?segno|d\.s\./.test(t)) return /coda/.test(t) ? "D.S. al Coda" : /fine/.test(t) ? "D.S. al Fine" : "D.S.";
+    if (/segno/.test(t)) return "Segno";
     if (/start.*repeat|repeat.*start|left repeat/.test(t)) return "Start repeat";
     if (/end.*repeat|repeat.*end|right repeat/.test(t)) return "End repeat";
     return n || (m && m.label) || "Structure";
@@ -101,7 +101,7 @@
     p.dispatch = function(action,phase){
       if(this.__heldCatalog && action==="confirm"&&phase==="press"){const e=this.__heldCatalog;this.__heldCatalog=null;applyAt(this,e,{s:this.state.staff,p:this.state.pos,step:this.state.step});return;}
       if(this.state.halo&&action==="confirm"){
-        if(phase==="press"){clearTimeout(this.__holdTimer);this.__holdReady=false;this.__holdTimer=setTimeout(()=>{this.__holdReady=true;const e=entryAt(this,this.state.haloCat,this.state.haloIdx);this.__heldCatalog=e;this.setState({halo:false,spoken:"Move to any position and press A to place "+(e?e[0]:"the symbol")});},HOLD_MS);return;}
+        if(phase==="press"){const pads=navigator.getGamepads?Array.from(navigator.getGamepads()).filter(Boolean):[];if(!pads.length)return this.haloApply();clearTimeout(this.__holdTimer);this.__holdReady=false;this.__holdTimer=setTimeout(()=>{this.__holdReady=true;const e=entryAt(this,this.state.haloCat,this.state.haloIdx);this.__heldCatalog=e;this.setState({halo:false,spoken:"Move to any position and press A to place "+(e?e[0]:"the symbol")});},HOLD_MS);return;}
         if(phase==="release"){clearTimeout(this.__holdTimer);if(!this.__holdReady){this.__holdReady=false;return this.haloApply();}this.__holdReady=false;return;}
         return;
       }
