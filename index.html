@@ -6,9 +6,9 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="legato-build" content="20260727-notation-objects-2">
-<script src="./cache-refresh.js?v=20260727-notation-objects-2"></script>
-<script src="./support.js?v=20260727-notation-objects-2"></script>
+<meta name="legato-build" content="20260727-command-list-hairpins-1">
+<script src="./cache-refresh.js?v=20260727-command-list-hairpins-1"></script>
+<script src="./support.js?v=20260727-command-list-hairpins-1"></script>
 </head>
 <body>
 <x-dc>
@@ -666,19 +666,19 @@
 
   <sc-if value="{{ haloOpen }}" hint-placeholder-val="{{ false }}">
     <div style="position: fixed; inset: 0; background: rgba(6,8,7,.76); backdrop-filter: blur(4px); display: grid; place-items: center; z-index: 50;">
-      <div style="width: min(1000px, 94vw); max-height: 84vh; display: grid; grid-template-columns: 216px 1fr; border: 1px solid var(--border-strong); border-radius: 6px; background: var(--panel); box-shadow: 0 40px 110px rgba(0,0,0,.7); overflow: hidden; animation: ringIn .1s ease-out;">
-        <div data-scroll="halocats" style="border-right: 1px solid var(--border); background: var(--raised); padding: 12px 10px; overflow: auto;">
+      <div style="width: min(1000px, 94vw); height: min(760px, 84vh); max-height: 84vh; display: grid; grid-template-columns: 216px 1fr; border: 1px solid var(--border-strong); border-radius: 6px; background: var(--panel); box-shadow: 0 40px 110px rgba(0,0,0,.7); overflow: hidden; animation: ringIn .1s ease-out;">
+        <div data-scroll="halocats" style="border-right: 1px solid var(--border); background: var(--raised); padding: 12px 10px; min-height: 0; overflow: auto;">
           <div style="font-family: var(--ui-font); font-size: 11.5px; font-weight: 600; color: var(--muted); letter-spacing: .02em; padding: 2px 6px 10px;">Category</div>
           <div style="display: grid; gap: 2px;">
             <sc-for list="{{ haloCats }}" as="c" hint-placeholder-count="11">
-              <div onClick="{{ c.onSelect }}" data-ptr="{{ c.name }}" style="{{ c.style }}" style-hover="background:var(--hover)">
+              <div onClick="{{ c.onSelect }}" data-ptr="{{ c.name }}" data-halo-category="{{ c.index }}" style="{{ c.style }}" style-hover="background:var(--hover)">
                 <span>{{ c.name }}</span>
                 <span style="font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--muted-3);">{{ c.count }}</span>
               </div>
             </sc-for>
           </div>
         </div>
-        <div style="display: flex; flex-direction: column; min-width: 0;">
+        <div style="display: flex; flex-direction: column; min-width: 0; min-height: 0;">
           <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 16px; border-bottom: 1px solid var(--border);">
             <div style="display: flex; align-items: baseline; gap: 10px;">
               <div style="font-size: 17px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;">{{ haloCatName }}</div>
@@ -692,10 +692,10 @@
             </div>
           </div>
           </div>
-          <div data-scroll="halo" style="flex: 1; overflow: auto; padding: 12px 14px 16px;">
+          <div data-scroll="halo" style="flex: 1; min-height: 0; overflow: auto; padding: 12px 14px 16px;">
             <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px;">
               <sc-for list="{{ haloItems }}" as="h" hint-placeholder-count="16">
-                <div onClick="{{ h.onSelect }}" data-ptr="{{ h.name }}" style="{{ h.style }}" style-hover="border-color:var(--border-hover)">
+                <div onClick="{{ h.onSelect }}" data-ptr="{{ h.name }}" data-halo-item="{{ h.index }}" style="{{ h.style }}" style-hover="border-color:var(--border-hover)">
                   <div style="{{ h.glyphStyle }}">{{ h.glyph }}</div>
                   <div style="{{ h.labelStyle }}">{{ h.name }}</div>
                 </div>
@@ -1160,10 +1160,10 @@ const CAT = [
   ['Articulations', [['Staccato','\uE4A2'],['Staccatissimo','\uE4A6'],['Tenuto','\uE4A4'],['Accent','\uE4A0'],['Marcato','\uE4AC'],['Portato','\uE4B2'],['Fermata','\uE4C0'],['Short fermata','\uE4C4'],['Long fermata','\uE4C6'],['Breath mark','\uE4CE'],['Caesura','\uE4D1'],['Up bow','\uE612'],['Down bow','\uE610'],['Open string','\uE614'],['Stopped','\uE633'],['Natural harmonic','\uE614'],['Artificial harmonic','\u25CA'],['Snap pizzicato','\uE631'],['Left-hand pizz.','+'],['Right-hand pizz.','pizz.'],['Heel','\uE666'],['Toe','\uE665']]],
   ['Ornaments', [['Trill','\uE566'],['Trill with sharp','\uE566\uE262'],['Trill with flat','\uE566\uE260'],['Trill with natural','\uE566\uE261'],['Short trill','\uE56C'],['Upper mordent','\uE56C'],['Lower mordent','\uE56D'],['Double mordent','\uE56E'],['Turn','\uE567'],['Inverted turn','\uE568'],['Delayed turn','\uE569'],['Turn above','\uE56A'],['Haydn ornament','\uE56F'],['Tremblement','\uE56E'],['Shake','\uE585'],['Trill with mordent','\uE5B8'],['Appoggiatura trill','\uE5B2'],['Trill suffix','\uE5B3'],['Double cadence','\uE5B4'],['Double cadence with turn','\uE5B5'],['Trill suffix (Dandrieu)','\uE5B6'],['Port de voix falling','\uE5B7'],['Cadence upper prefix','\uE5BB'],['Mordent upper prefix','\uE5BD'],['Inverted mordent prefix','\uE5C8'],['Turn trill (d\u2019Anglebert)','\uE5C0'],['Slide trill (d\u2019Anglebert)','\uE5C1'],['Ascending slide','\uE5B0'],['Descending slide','\uE5B1'],['Grace before','\uE560'],['Grace after','\uE560'],['Acciaccatura','\uE560'],['Appoggiatura','\uE562'],['Slide','\uE5E8'],['Jazz turn','\uE5E4'],['Fall','\uE5D1'],['Rough fall','\uE5D6'],['Lift','\uE5D3'],['Scoop','\uE5D0'],['Doit','\uE5D5'],['Plop','\uE5D4'],['Rip','\uE5D6'],['Smear','\uE5E2'],['Flip','\uE5E1'],['Bend','\uE5E3'],['Muted (closed)','\uE5E5'],['Arpeggio up','\uE634'],['Arpeggio down','\uE635'],['Glissando','gliss.'],['Portamento','port.']]],
   ['Dynamics', [['pppp','\uE529'],['ppp','\uE52A'],['pp','\uE52B'],['p','\uE520'],['mp','\uE52C'],['mf','\uE52D'],['f','\uE522'],['ff','\uE52F'],['fff','\uE530'],['ffff','\uE531'],['sfz','\uE539'],['sffz','\uE53B'],['fp','\uE534'],['rfz','\uE53C'],['niente','\uE526'],['Crescendo','\uE53E'],['Diminuendo','\uE53F'],['Swell','\uE53E\uE53F'],['Niente cresc.','\u25CB\uE53E'],['Niente dim.','\uE53F\u25CB']]],
-  ['Lines', [['Tie','\uE1FD'],['Slur','\uE1FD'],['Phrase mark','\uE1FD'],['Glissando line','\uEAAF'],['Portamento line','\uEAB5'],['Trill extension','\uEAA4'],['Sustain pedal','\uE650'],['Pedal change','\uE656'],['Una corda','una corda'],['Tre corde','tre corde'],['8va','\uE512'],['8vb','\uE51C'],['15ma','\uE514'],['15mb','\uE51D'],['One-stroke tremolo','\uE220'],['Two-stroke tremolo','\uE221'],['Three-stroke tremolo','\uE222'],['Bend','\uE5E3'],['Release','\uE5E7'],['Let ring','l.v.'],['Vibrato','\uEAB0'],['Ritardando','rit.'],['Rallentando','rall.'],['Accelerando','accel.']]],
+  ['Lines', [['Tie','\uE1FD'],['Slur','\uE1FD'],['Phrase mark','\uE1FD'],['Glissando line','\uEAAF'],['Portamento line','\uEAB5'],['Trill extension','\uEAA4'],['Sustain pedal','\uE650'],['Pedal change','\uE656'],['Una corda','una corda'],['Tre corde','tre corde'],['8va','\uE512'],['8vb','\uE51C'],['15ma','\uE514'],['15mb','\uE51D'],['One-stroke tremolo','\uE220'],['Two-stroke tremolo','\uE221'],['Three-stroke tremolo','\uE222'],['Bend','\uE5E3'],['Release','\uE5E7'],['Let ring','l.v.'],['Vibrato','\uEAB0'],['Ritardando','rit.'],['Rallentando','rall.'],['Accelerando','accel.'],['Horizontal line','—']]],
   ['Rhythm', [['Triplet','3'],['Quintuplet','5'],['Sextuplet','6'],['Septuplet','7'],['Nonuplet','9'],['Beam together','\uE8E0'],['Break beam','\uE8E1'],['Stem up','\u2191'],['Stem down','\u2193'],['Automatic stem','\u2195'],['Voice 1','1'],['Voice 2','2'],['Voice 3','3'],['Voice 4','4'],['Cross-staff note','\u21C5'],['Rhythmic slash','\uE101'],['Repeat previous note','\uE500'],['Repeat beat','\uE501'],['Repeat measure','\uE500']]],
-  ['Text', [['Lyrics','la'],['Chord symbol','C7'],['Figured bass','6\u2074'],['Fingering','1'],['Playing technique','pizz.'],['Tempo text','Allegro'],['Rehearsal mark','A'],['Expression text','dolce'],['Staff text','text'],['System text','TEXT'],['Copyright','\u00A9'],['Subtitle','Sub'],['Composer','Name']]],
-  ['Structure', [['Treble clef','\uE050'],['Bass clef','\uE062'],['Alto clef','\uE05C'],['Tenor clef','\uE05C'],['Percussion clef','\uE069'],['Key signature','\uE262\uE260'],['Time signature','\uE09E'],['Open meter','X'],['Normal barline','\uE030'],['Double barline','\uE031'],['Final barline','\uE032'],['Start repeat','\uE040'],['End repeat','\uE041'],['First ending','1.'],['Second ending','2.'],['Segno','\uE047'],['Coda','\uE048'],['To Coda','To \uE048'],['Fine','Fine'],['D.C.','D.C.'],['D.C. al Fine','D.C. al Fine'],['D.S.','D.S.'],['D.S. al Coda','D.S. al Coda'],['System break','\u21B5'],['Page break','\u21E5'],['Section break','\u00A7']]],
+  ['Text', [['Lyrics','la'],['Chord symbol','C7'],['Figured bass','6\u2074'],['Fingering','1'],['Playing technique','pizz.'],['Tempo change','♩ = 120'],['Rehearsal mark','A'],['Expression text','dolce'],['Staff text','text'],['System text','TEXT'],['Copyright','\u00A9'],['Subtitle','Sub'],['Composer','Name']]],
+  ['Structure', [['Treble clef','\uE050'],['Bass clef','\uE062'],['Alto clef','\uE05C'],['Tenor clef','\uE05C'],['Percussion clef','\uE069'],['Key signature change','\uE262\uE260'],['Time signature change','\uE09E'],['Open meter','X'],['Normal barline','\uE030'],['Double barline','\uE031'],['Final barline','\uE032'],['Start repeat','\uE040'],['End repeat','\uE041'],['First ending','1.'],['Second ending','2.'],['Segno','\uE047'],['Coda','\uE048'],['To Coda','To \uE048'],['Fine','Fine'],['D.C.','D.C.'],['D.C. al Fine','D.C. al Fine'],['D.S.','D.S.'],['D.S. al Coda','D.S. al Coda'],['System break','\u21B5'],['Page break','\u21E5'],['Section break','\u00A7']]],
   ['Layout', [['Nudge left','\u2190'],['Nudge right','\u2192'],['Nudge up','\u2191'],['Nudge down','\u2193'],['More spacing','\u2194+'],['Less spacing','\u2194\u2212'],['Scale up','A+'],['Scale down','A\u2212'],['Hide item','\u25CC'],['Show item','\u25CF'],['Flip placement','\u21C5'],['Reset position','\u21BA'],['Move to staff above','\u21E7'],['Move to staff below','\u21E9'],['Show voice color','\u25C8']]]
 ];
 const PROJECT_OPS = [
@@ -1493,19 +1493,27 @@ class Component extends DCLogic {
     this.setState({ custom: {}, remapFor: null, spoken: 'All bindings reset to the default layout' });
   }
 
+  revealHaloSelection() {
+    requestAnimationFrame(() => {
+      const item = document.querySelector('[data-halo-item="' + this.state.haloIdx + '"]');
+      const category = document.querySelector('[data-halo-category="' + this.state.haloCat + '"]');
+      if (item && item.scrollIntoView) item.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      if (category && category.scrollIntoView) category.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    });
+  }
   haloMove(dx, dy) {
     this.setState(s => {
       const list = CAT[s.haloCat][1], cols = 4;
       let i = s.haloIdx + dx + dy * cols;
       i = Math.max(0, Math.min(list.length - 1, i));
       return { haloIdx: i, spoken: list[i][0] + ' — ' + CAT[s.haloCat][0] };
-    });
+    }, () => this.revealHaloSelection());
   }
   haloCategory(d) {
     this.setState(s => {
       const c = (s.haloCat + d + CAT.length) % CAT.length;
       return { haloCat: c, haloIdx: 0, spoken: CAT[c][0] + ', ' + CAT[c][1].length + ' commands' };
-    });
+    }, () => this.revealHaloSelection());
   }
   ensureSelection() {
     let sel = this.selected();
@@ -1726,7 +1734,7 @@ class Component extends DCLogic {
         return this.setState({ halo: false });
       }
       if (/Chord symbol/.test(name)) { this.addChordSymbol('C7'); return this.setState({ halo: false }); }
-      if (/Tempo text/.test(name)) { this.openScoreEventPanel('tempo', 'Tempo', glyph); return; }
+      if (/Tempo (?:text|change)/.test(name)) { this.openScoreEventPanel('tempo', 'Tempo', glyph); return; }
       if (/Rehearsal mark/.test(name)) { this.placeScoreEvent('rehearsal', name, glyph, glyph, { system: true, text: glyph || 'A' }); return; }
       if (/Playing technique/.test(name)) { this.placeScoreEvent('technique', name, glyph, glyph, { system: false, text: glyph || 'pizz.' }); return; }
       const type = /System text|Copyright|Subtitle|Composer/.test(name) ? 'system-text' : /Staff text/.test(name) ? 'staff-text' : 'text';
@@ -4644,7 +4652,7 @@ class Component extends DCLogic {
         else if (ev.type === 'structure' || ev.type === 'system-text') { top = topStaff.top - 42; extra = ev.type === 'system-text' ? 'font-weight:600;' : ''; }
         else if (ev.type === 'technique') { top = st.top + 63; extra = 'font-style:italic;font-weight:600;'; }
         const sel = selected ? 'outline:2px solid var(--score-accent);outline-offset:3px;background:rgba(var(--accent-rgb),.12);border-radius:2px;' : '';
-        return { text: text2, ptr: (ev.name || ev.type) + ' at the cursor', onSelect: () => this.selectScoreObject(ev.id), style: 'position:absolute;left:' + left + 'px;top:' + top + 'px;z-index:12;cursor:pointer;color:var(--ink);white-space:nowrap;font-family:' + family + ';font-size:' + size + 'px;line-height:1;' + extra + sel };
+        return { text: text2, ptr: (ev.name || ev.type) + ' at the cursor', onSelect: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.selectScoreObject(ev.id); }, style: 'position:absolute;left:' + left + 'px;top:' + top + 'px;z-index:12;cursor:pointer;color:var(--ink);white-space:nowrap;font-family:' + family + ';font-size:' + size + 'px;line-height:1;' + extra + sel };
       }),
       scoreSpans: (() => {
         const list = (s.scoreSpans || []).slice();
@@ -4656,7 +4664,14 @@ class Component extends DCLogic {
           let top = Math.min(st1.top, st2.top) - 24, h = Math.abs(st2.top - st1.top) + 90, label = '', end = '', line1 = '', line2 = '';
           const base = 'position:absolute;left:0;transform-origin:left center;border-color:' + accent2 + ';';
           if (sp.type === 'slur' || sp.type === 'phrase') { top = Math.min(st1.top, st2.top) - (sp.type === 'phrase' ? 40 : 27); h = 28; line1 = base + 'top:9px;width:' + width + 'px;height:14px;border:2px solid ' + accent2 + ';border-color:' + accent2 + ' transparent transparent transparent;border-radius:50% 50% 0 0;'; }
-          else if (sp.type.indexOf('hairpin') === 0) { top = st1.top + 65; h = 22; const up = sp.type !== 'hairpin-down'; const swell = sp.type === 'hairpin-swell'; line1 = base + 'top:10px;width:' + (swell ? width / 2 : width) + 'px;height:1.5px;background:' + accent2 + ';transform:rotate(' + (up ? -7 : 7) + 'deg);'; line2 = base + 'top:10px;width:' + (swell ? width / 2 : width) + 'px;height:1.5px;background:' + accent2 + ';transform:rotate(' + (up ? 7 : -7) + 'deg);' + (swell ? 'left:' + width / 2 + 'px;' : ''); }
+          else if (sp.type.indexOf('hairpin') === 0) {
+            top = st1.top + 62; h = 30;
+            const swell = sp.type === 'hairpin-swell';
+            const outer = swell ? 'polygon(0 50%,50% 0,100% 50%,50% 100%)' : (sp.type === 'hairpin-down' ? 'polygon(0 0,100% 50%,0 100%)' : 'polygon(0 50%,100% 0,100% 100%)');
+            const inner = swell ? 'polygon(0 50%,50% 20%,100% 50%,50% 80%)' : (sp.type === 'hairpin-down' ? 'polygon(0 20%,100% 50%,0 80%)' : 'polygon(0 50%,100% 20%,100% 80%)');
+            line1 = base + 'top:7px;width:' + width + 'px;height:16px;background:' + accent2 + ';clip-path:' + outer + ';pointer-events:none;';
+            line2 = base + 'top:7px;width:' + width + 'px;height:16px;background:var(--paper);clip-path:' + inner + ';pointer-events:none;';
+          }
           else if (sp.type === 'pedal') { top = st1.top + 72; h = 22; label = 'Ped.'; end = '✱'; line1 = base + 'left:28px;top:10px;width:' + Math.max(8, width - 38) + 'px;border-top:1.5px solid ' + accent2 + ';'; }
           else if (sp.type.indexOf('octave-') === 0) { top = st1.top - 45; h = 25; label = sp.type === 'octave-up' ? '8va' : sp.type === 'octave-down' ? '8vb' : sp.type === 'octave-up-2' ? '15ma' : '15mb'; line1 = base + 'left:30px;top:10px;width:' + Math.max(8, width - 30) + 'px;border-top:1.5px dashed ' + accent2 + ';'; end = '⌟'; }
           else if (sp.type === 'gliss' || sp.type === 'portamento') { const y1 = st1.top + 48 - (sp.step1 || 6) * 6, y2 = st2.top + 48 - (sp.step2 || 6) * 6, dy = y2 - y1; top = Math.min(y1, y2) - 6; h = Math.abs(dy) + 16; const angle = Math.atan2(dy, width) * 180 / Math.PI; label = sp.type === 'gliss' ? 'gliss.' : 'port.'; line1 = base + 'top:' + (y1 - top) + 'px;width:' + width + 'px;border-top:1.5px solid ' + accent2 + ';transform:rotate(' + angle + 'deg);'; }
@@ -4665,7 +4680,7 @@ class Component extends DCLogic {
           else if (sp.type === 'ending') { const first = STAVES.find(x => !x.hidden) || STAVES[0]; top = first.top - 72; h = 24; label = /^Second/.test(sp.name) ? '2.' : '1.'; line1 = base + 'top:8px;width:' + width + 'px;border-top:1.5px solid ' + accent2 + ';border-left:1.5px solid ' + accent2 + ';height:12px;'; }
           else { top = st1.top + 66; h = 20; label = sp.name || ''; line1 = base + 'top:10px;width:' + width + 'px;border-top:1.5px solid ' + accent2 + ';'; }
           const selectedStyle = selected ? 'background:rgba(var(--accent-rgb),.08);outline:1px dashed ' + accent2 + ';outline-offset:2px;' : '';
-          return { ptr: (sp.name || sp.type) + (sp.preview ? ' point two preview' : ' from point one to point two'), onSelect: () => { if (!sp.preview) this.selectScoreObject(sp.id); }, wrapStyle: 'position:absolute;left:' + x1 + 'px;top:' + top + 'px;width:' + width + 'px;height:' + h + 'px;z-index:11;cursor:pointer;' + selectedStyle, line1Style: line1 || 'display:none;', line2Style: line2 || 'display:none;', label: label, end: end, labelStyle: label ? 'position:absolute;left:0;top:0;font-family:var(--ui-font);font-size:13px;font-style:italic;font-weight:600;color:' + accent2 + ';white-space:nowrap;' : 'display:none;', endStyle: end ? 'position:absolute;right:-2px;top:2px;font-family:var(--ui-font);font-size:15px;color:' + accent2 + ';' : 'display:none;' };
+          return { ptr: (sp.name || sp.type) + (sp.preview ? ' point two preview' : ' from point one to point two'), onSelect: (e) => { if (e && e.stopPropagation) e.stopPropagation(); if (!sp.preview) this.selectScoreObject(sp.id); }, wrapStyle: 'position:absolute;left:' + x1 + 'px;top:' + top + 'px;width:' + width + 'px;height:' + h + 'px;z-index:11;cursor:pointer;touch-action:manipulation;' + selectedStyle, line1Style: line1 || 'display:none;', line2Style: line2 || 'display:none;', label: label, end: end, labelStyle: label ? 'position:absolute;left:0;top:0;font-family:var(--ui-font);font-size:13px;font-style:italic;font-weight:600;color:' + accent2 + ';white-space:nowrap;pointer-events:none;' : 'display:none;', endStyle: end ? 'position:absolute;right:-2px;top:2px;font-family:var(--ui-font);font-size:15px;color:' + accent2 + ';pointer-events:none;' : 'display:none;' };
         });
       })(),
       ledgers: (() => {
@@ -5178,13 +5193,13 @@ class Component extends DCLogic {
       haloCatName: CAT[s.haloCat][0],
       haloCount: CAT[s.haloCat][1].length + ' COMMANDS',
       haloCats: CAT.map((c, i) => ({
-        name: c[0], count: c[1].length,
-        onSelect: () => this.setState({ haloCat: i, haloIdx: 0, spoken: c[0] }),
+        index: i, name: c[0], count: c[1].length,
+        onSelect: () => this.setState({ haloCat: i, haloIdx: 0, spoken: c[0] }, () => this.revealHaloSelection()),
         style: 'display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 11px;border-radius:5px;cursor:pointer;font-size:13px;border:1px solid ' + (s.haloCat === i ? accent : 'transparent') + ';background:' + (s.haloCat === i ? 'rgba(var(--accent-rgb),.1)' : 'transparent') + ';color:' + (s.haloCat === i ? 'var(--text)' : 'var(--muted)') + ';'
       })),
       haloItems: CAT[s.haloCat][1].map((c, i) => ({
-        name: c[0], glyph: c[1],
-        onSelect: () => { this.setState({ haloIdx: i }); this.haloApply(); },
+        index: i, name: c[0], glyph: c[1],
+        onSelect: () => this.setState({ haloIdx: i }, () => this.haloApply()),
         style: 'display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:6px;cursor:pointer;min-height:52px;border:1px solid ' + (s.haloIdx === i ? accent : 'var(--border)') + ';background:' + (s.haloIdx === i ? 'rgba(var(--accent-rgb),.13)' : 'var(--raised)') + ';',
         glyphStyle: 'font-family:Bravura,\'Noto Music\',serif;font-size:21px;line-height:1;min-width:26px;text-align:center;color:' + (s.haloIdx === i ? accent : 'var(--text-2)') + ';',
         labelStyle: 'font-size:12.5px;letter-spacing:.01em;color:' + (s.haloIdx === i ? 'var(--text)' : 'var(--muted-text)') + ';'
