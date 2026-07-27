@@ -1,1 +1,1 @@
-ordinary note clears chord head: expected exactly 1 match, found 2
+complete accidental rendering: expected exactly 1 match, found 0
