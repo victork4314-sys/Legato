@@ -100,7 +100,7 @@ one(
       returnToScoreStyle: 'display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:58px;padding:3px 9px;border-radius:5px;cursor:pointer;line-height:1.05;border:1px solid ' + accent + ';background:' + (s.zone === 3 ? accent : 'rgba(var(--accent-rgb),.14)') + ';color:' + (s.zone === 3 ? 'var(--bg)' : 'var(--text-strong)') + ';box-shadow:' + (s.zone === 3 ? '0 0 0 2px rgba(var(--accent-rgb),.22)' : 'none') + ';',
       scoreEditorActive: s.zone === 3 ? 'true' : 'false',
       scoreEditorStyle: 'flex:1;min-height:0;overflow:auto;padding:12px 0 18px;background:radial-gradient(1200px 500px at 50% -5%,var(--raised),var(--bg) 70%);position:relative;',
-      scoreEditorBadgeStyle: s.zone === 3 ? 'position:sticky;top:8px;left:12px;z-index:55;width:max-content;margin:0 0 -27px 12px;padding:6px 9px;border-radius:5px;background:var(--accent);color:var(--bg);font-family:\'IBM Plex Mono\',monospace;font-size:9px;font-weight:700;letter-spacing:.05em;pointer-events:none;' : 'display:none;',
+      scoreEditorBadgeStyle: s.zone === 3 ? 'position:sticky;top:8px;left:12px;z-index:55;width:max-content;margin:0 0 -27px 12px;padding:6px 9px;border-radius:5px;background:var(--accent);color:var(--bg);font-family:var(--ui-font);font-size:9px;font-weight:700;letter-spacing:.05em;pointer-events:none;' : 'display:none;',
       fileMenuStyle: 'display:flex;align-items:center;gap:7px;padding:4px 10px;border:1px solid var(--border-strong);border-radius:5px;background:var(--raised);cursor:pointer;' + this.ring('top', 4),
 ''',
 'score control render state')
