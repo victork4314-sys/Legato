@@ -27,6 +27,7 @@ jobs:
           python3 - <<'PY' > repair-error.txt 2>&1
           import re
           import runpy
+          from pathlib import Path
           original_subn = re.subn
           def literal_subn(pattern, replacement, string, count=0, flags=0):
               if isinstance(replacement, str):
@@ -34,6 +35,15 @@ jobs:
               return original_subn(pattern, replacement, string, count=count, flags=flags)
           re.subn = literal_subn
           runpy.run_path('.github/scripts/gentle_engraving_patch.py', run_name='__main__')
+          path = Path('index.html')
+          patched = path.read_text(encoding='utf-8')
+          slash = chr(92)
+          patched = re.sub(
+              r"font-family:'(Inter|Source Serif 4)'",
+              lambda match: 'font-family:' + slash + "'" + match.group(1) + slash + "'",
+              patched
+          )
+          path.write_text(patched, encoding='utf-8')
           PY
           code=$?
           set -e
