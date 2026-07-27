@@ -1,0 +1,16 @@
+toggleTie()                  1514:      this.toggleTie(); msg = 'Tie toggled';
+autoRests:                   4112:      autoRests: (() => {
+focusList()                  1892:        const list = this.focusList(), it = list[s.focus];
+activateFocus()              1867:      if (action === 'confirm') return this.activateFocus();
+function midiFor             1153:function midiFor(step, bass, acc, key, clefOctave) {
+timeTopStyle:                3857:          timeTopStyle: 'position:absolute;left:' + timeX + 'px;top:-3px;width:' + timeWidth + 'px;height:27px;display:grid;place-items:center;' + BR + 'font-size:43px;line-height:1;color:var(--ink);white-space:nowrap;cursor:pointer;z-index:5;',
+staffHits:                   4167:      staffHits: STAVES.map((st, i) => ({
+componentDidUpdate()         1312:  componentDidUpdate() {
+const DOC_KEYS               978:const DOC_KEYS = ['notes', 'chords', 'divisi', 'condense', 'players', 'clefs', 'clefOctaves', 'instruments', 'title', 'composer', 'keyIdx', 'meter', 'tempo', 'bars', 'measureMarks'];
+constructor(props)           themeRows:                   3727:      themeRows: THEMES.map(t => ({
+setupRows:                   3907:      setupRows: [
+previous-zone':              1906:      case 'previous-zone': if (s.zone === 3 && s.selId) { this.nudgeAccidental(-1); break; } this.cycleVisibleZone(-1); break;
+selectNote(                  3247:  selectNote(n) {
+enterNote()                  1885:      case 'confirm': P ? this.clickPointer() : this.enterNote(); break;
+tieStyle:                    4548:          if (st.hidden) return { wrapStyle: 'display:none;', glyphStyle: 'display:none;', chordHeads: [], marks: [], glyph: '', flag: '', flagStyle: 'display:none;', stemStyle: 'display:none;', dotStyle: 'display:none;', dotGlyph: '', tupStyle: 'display:none;', tup: '', tieStyle: 'display:none;', selStyle: 'display:none;', acc: '', accStyle: 'display:none;', art: '', artStyle: 'display:none;', orn: '', ornStyle: 'display:none;', dyn: '', dynStyle: 'display:none;', hitStyle: 'display:none;', ptr: '', onSelect: () => {} };
+data-score-caret             349:            <div data-score-caret="true" style="{{ caretStyle }}"></div>
