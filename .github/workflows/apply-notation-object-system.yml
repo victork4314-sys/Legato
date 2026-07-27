@@ -6,6 +6,7 @@ on:
       - index.html
       - tools/apply-notation-object-system.py
       - tools/fix-notation-object-system.py
+      - tools/fix-notation-syntax.py
       - tools/test-notation-object-system.mjs
       - .github/workflows/apply-notation-object-system.yml
 permissions:
@@ -33,6 +34,8 @@ jobs:
         run: python3 tools/apply-notation-object-system.py
       - name: Apply lifecycle and export follow-ups
         run: python3 tools/fix-notation-object-system.py
+      - name: Repair glissando syntax
+        run: python3 tools/fix-notation-syntax.py
       - name: Check embedded JavaScript syntax
         run: |
           python3 - <<'PY'
