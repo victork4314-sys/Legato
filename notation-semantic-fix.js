@@ -1,6 +1,6 @@
 "use strict";
 (() => {
-  const VERSION = "20260728-semantic-audio-drag-1";
+  const VERSION = "20260728-semantic-audio-drag-2";
   const HOLD_MS = 360;
   const canon = (m, n) => {
     const t = [m && m.id, m && m.label, n].filter(Boolean).join(" ").toLowerCase();
@@ -18,13 +18,13 @@
   const enrich = (m, n, g) => {
     const x = Object.assign({}, m || {}), t = words(x, n) + " " + (g || "");
     if (/sforz|sfz|rinforz|rfz/.test(t)) { x.kind = "dynamic"; x.velocity = 118; x.sound = "dynamic"; }
-    else if (/fortississimo|ffff/.test(t)) { x.kind = "dynamic"; x.velocity = 126; }
-    else if (/fff/.test(t)) { x.kind = "dynamic"; x.velocity = 120; }
-    else if (/ff/.test(t)) { x.kind = "dynamic"; x.velocity = 110; }
+    else if (/fortississimo|(^|\s)ffff($|\s)/.test(t)) { x.kind = "dynamic"; x.velocity = 126; }
+    else if (/(^|\s)fff($|\s)/.test(t)) { x.kind = "dynamic"; x.velocity = 120; }
+    else if (/(^|\s)ff($|\s)/.test(t)) { x.kind = "dynamic"; x.velocity = 110; }
     else if (/\bmf\b/.test(t)) { x.kind = "dynamic"; x.velocity = 68; }
     else if (/\bmp\b/.test(t)) { x.kind = "dynamic"; x.velocity = 46; }
-    else if (/ppp/.test(t)) { x.kind = "dynamic"; x.velocity = 20; }
-    else if (/pp/.test(t)) { x.kind = "dynamic"; x.velocity = 30; }
+    else if (/(^|\s)ppp($|\s)/.test(t)) { x.kind = "dynamic"; x.velocity = 20; }
+    else if (/(^|\s)pp($|\s)/.test(t)) { x.kind = "dynamic"; x.velocity = 30; }
     if (/fermata/.test(t)) { x.kind = "hold"; x.sound = "fermata"; x.factor = Number(x.factor) || 2; }
     else if (/caesura/.test(t)) { x.kind = "hold"; x.sound = "hold"; x.seconds = Number(x.seconds) || .6; }
     else if (/breath mark/.test(t)) { x.kind = "hold"; x.sound = "hold"; x.seconds = Number(x.seconds) || .25; }
