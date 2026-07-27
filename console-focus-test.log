@@ -1,5 +1,1 @@
-page.evaluate: Error: owner missing
-    at eval (eval at evaluate (:311:30), <anonymous>:3:22)
-    at UtilityScript.evaluate (<anonymous>:313:16)
-    at UtilityScript.<anonymous> (<anonymous>:1:44)
-    at /home/runner/work/Legato/Legato/console-focus-test.js:8:27
+right sidebar controls per mode: 30,27,35,53,34,48
