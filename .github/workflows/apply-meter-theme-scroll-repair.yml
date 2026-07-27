@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - .github/workflows/apply-meter-theme-scroll-repair.yml
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: write
@@ -31,6 +33,7 @@ jobs:
           ! grep -q "window.print(), 250" index.html
           ! grep -q "levelUnit = Math.max(.125" index.html
       - name: Commit only the repaired app file
+        if: github.event_name == 'push'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
