@@ -1,0 +1,21 @@
+PASS: glyph count
+PASS: range count
+PASS: catalog length
+PASS: control and text glyphs silent
+PASS: grace notes are not trills
+PASS: cluster noteheads are not harmonics
+PASS: performance semantic kinds audible
+PASS: controlBeginBeam silent
+PASS: acciaccatura classification
+PASS: grace slash component silent
+PASS: breath comma hold
+PASS: forte velocity
+PASS: piano velocity
+PASS: Harmon open
+Traceback (most recent call last):
+  File "/home/runner/work/Legato/Legato/tools/audit_corrected_catalog_v2.py", line 18, in <module>
+    exec(compile(source, 'tools/audit_corrected_catalog.py', 'exec'), {'__name__': '__main__', 'Path': Path, 'json': __import__('json'), 're': __import__('re')})
+  File "tools/audit_corrected_catalog.py", line 35, in <module>
+    check('Harmon closed', by_id['brassHarmonMuteStemClosed'].get('technique') == 'harmon-closed', repr(by_id['brassHarmonMuteStemClosed']))
+                           ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyError: 'brassHarmonMuteStemClosed'
