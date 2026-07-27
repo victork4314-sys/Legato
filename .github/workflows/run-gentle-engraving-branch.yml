@@ -41,6 +41,7 @@ jobs:
             cat repair-error.txt
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git restore index.html
             git add repair-error.txt
             git commit -m "Record guarded repair mismatch"
             git push origin HEAD:fix/gentle-engraving-and-direct-editing
@@ -49,15 +50,32 @@ jobs:
           rm -f repair-error.txt
 
       - name: Run engraving regression checks
+        shell: bash
         run: |
-          python3 .github/scripts/gentle_engraving_test.py
-          node --check /tmp/legato-logic.js
+          set +e
+          {
+            python3 .github/scripts/gentle_engraving_test.py
+            node --check /tmp/legato-logic.js
+          } > test-error.txt 2>&1
+          code=$?
+          set -e
+          if [ "$code" -ne 0 ]; then
+            cat test-error.txt
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git restore index.html
+            git add test-error.txt
+            git commit -m "Record engraving regression failure"
+            git push origin HEAD:fix/gentle-engraving-and-direct-editing
+            exit "$code"
+          fi
+          rm -f test-error.txt
 
       - name: Commit repaired safety branch
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A index.html repair-error.txt
+          git add -A index.html repair-error.txt test-error.txt
           git diff --cached --check
           git commit -m "Repair engraving and add direct score editing"
           git push origin HEAD:fix/gentle-engraving-and-direct-editing
