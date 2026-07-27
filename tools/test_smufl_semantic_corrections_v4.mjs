@@ -1,0 +1,21 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+
+const sourcePath = path.resolve('tools/test_smufl_semantic_corrections.mjs');
+let source = fs.readFileSync(sourcePath, 'utf8');
+const kindsOld = "const audibleKinds = new Set(['dynamic','hold','grace','ornament','tremolo','pitch-effect','articulation','technique','bowing','percussion','electronic','hairpin']);";
+const kindsNew = "const audibleKinds = new Set(['dynamic','hold','grace','ornament','tremolo','pitch-effect','articulation','technique','bowing','percussion','electronic','hairpin','let-ring','pedal','octave-line','tempo','tie','slur','vibrato']);";
+if (source.split(kindsOld).length !== 2) throw new Error('Could not expand the browser audible-kind audit');
+source = source.replace(kindsOld, kindsNew);
+const harmonOld = "harmonClosed: byId.brassHarmonMuteStemClosed,";
+const harmonNew = "harmonClosed: data.glyphs.find(g => /harmon mute/i.test((g.label || '') + ' ' + (g.id || '')) && /stem (in|closed|inside)/i.test((g.label || '') + ' ' + (g.id || ''))),";
+if (source.split(harmonOld).length !== 2) throw new Error('Could not replace the invented Harmon-closed ID');
+source = source.replace(harmonOld, harmonNew);
+const unmuteOld = "const unmuted = await run([event('electronic','mute',mute,0), event('electronic','unmute',unmute,0)]);";
+const unmuteNew = "const unmuted = await run([event('electronic','mute',mute,-0.1), event('electronic','unmute',unmute,0)]);";
+if (source.split(unmuteOld).length !== 2) throw new Error('Could not make electronic unmute timing explicit');
+source = source.replace(unmuteOld, unmuteNew);
+const output = path.resolve('/tmp/test-smufl-semantic-corrections-v4.mjs');
+fs.writeFileSync(output, source);
+await import(pathToFileURL(output).href + '?v=' + Date.now());
