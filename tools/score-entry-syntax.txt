@@ -1,9 +1,0 @@
-/tmp/legato-score-entry.js:2920
-      scoreEditorBadgeStyle: s.zone === 3 ? 'position:sticky;top:8px;left:12px;z-index:55;width:max-content;margin:0 0 -27px 12px;padding:6px 9px;border-radius:5px;background:var(--accent);color:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.05em;pointer-events:none;' : 'display:none;',
-                                                                                                                                                                                                                          ^^^
-
-SyntaxError: Unexpected identifier 'IBM'
-    at wrapSafe (node:internal/modules/cjs/loader:1713:18)
-    at checkSyntax (node:internal/main/check_syntax:78:3)
-
-Node.js v22.23.1
