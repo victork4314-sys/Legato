@@ -1,6 +1,17 @@
 "use strict";
 (() => {
   const CHECK_EVERY_MS = 30000;
+  const PLACEMENT_FIX_VERSION = "20260727-total-placement-1";
+
+  function loadPlacementFix() {
+    if (document.querySelector('script[data-legato-placement-fix="' + PLACEMENT_FIX_VERSION + '"]')) return;
+    const script = document.createElement('script');
+    script.src = './notation-placement-fix.js?v=' + encodeURIComponent(PLACEMENT_FIX_VERSION);
+    script.async = false;
+    script.dataset.legatoPlacementFix = PLACEMENT_FIX_VERSION;
+    script.onerror = () => console.error('[Legato placement] failed to load the notation placement repair');
+    document.head.appendChild(script);
+  }
 
   function currentBuild() {
     const meta = document.querySelector('meta[name="legato-build"]');
@@ -41,6 +52,7 @@
     }
   }
 
+  loadPlacementFix();
   addEventListener('focus', checkForNewBuild);
   addEventListener('online', checkForNewBuild);
   document.addEventListener('visibilitychange', () => {
