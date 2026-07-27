@@ -85,7 +85,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A index.html repair-error.txt test-error.txt
+          git add -A
           git diff --cached --check
           git commit -m "Repair engraving and add direct score editing"
           git push origin HEAD:fix/gentle-engraving-and-direct-editing
