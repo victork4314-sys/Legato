@@ -6,7 +6,7 @@ AssertionError [ERR_ASSERTION]: controller A should finish a saved slur span
 
 0 !== 1
 
-    at file:///home/runner/work/Legato/Legato/tools/test-notation-object-system.mjs:93:8 {
+    at file:///home/runner/work/Legato/Legato/tools/test-notation-object-system.mjs:103:8 {
   generatedMessage: false,
   code: 'ERR_ASSERTION',
   actual: 0,
