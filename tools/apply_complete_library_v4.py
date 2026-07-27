@@ -22,3 +22,5 @@ marker = "path = Path('index.html')"
 if marker not in finishing:
     raise SystemExit('finishing pass body not found')
 exec(compile(finishing[finishing.index(marker):], 'tools/apply_complete_library_v2.py', 'exec'), {'__name__': '__main__', 'Path': Path})
+
+# Human-authored trigger marker: run the complete guarded pipeline from this exact wrapper revision.
