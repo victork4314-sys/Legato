@@ -11,6 +11,7 @@ on:
       - "cache-refresh.js"
       - "smufl-catalog.js"
       - "tests/catalog-audit.test.js"
+      - "tests/run-catalog-audit.js"
       - ".github/workflows/catalog-audit-and-build.yml"
   pull_request:
     branches: [main]
@@ -22,6 +23,7 @@ on:
       - "cache-refresh.js"
       - "smufl-catalog.js"
       - "tests/catalog-audit.test.js"
+      - "tests/run-catalog-audit.js"
       - ".github/workflows/catalog-audit-and-build.yml"
   workflow_dispatch:
 
@@ -44,15 +46,17 @@ jobs:
           node --check notation-placement-priority-fix.js
           node --check notation-semantic-fix.js
           node --check notation-catalog-core.js
+          node --check notation-catalog-metadata-corrections.js
           node --check notation-catalog-placement.js
           node --check notation-catalog-render-audio.js
           node --check notation-theory-playback-fix.js
           node --check cache-refresh.js
           node --check tests/catalog-audit.test.js
+          node --check tests/run-catalog-audit.js
       - name: Audit every catalog entry
         id: catalog_audit
         continue-on-error: true
-        run: node tests/catalog-audit.test.js > catalog-audit-output.txt 2>&1
+        run: node tests/run-catalog-audit.js > catalog-audit-output.txt 2>&1
       - name: Upload catalog audit output
         if: always()
         uses: actions/upload-artifact@v4
