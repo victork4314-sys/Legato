@@ -1,6 +1,6 @@
 "use strict";
 (() => {
-  const VERSION = "20260728-catalog-audit-6";
+  const VERSION = "20260728-catalog-audit-7";
   const HOLD_MS = 360;
   const NORWEGIAN_KEYS = ("abcdefghijklmnopqrstuvwxyzæøå0123456789").split("")
     .concat(["É", "é", "♭", "♯", ".", ",", "-", "'", "SPACE", "DEL", "DONE"]);
@@ -63,7 +63,7 @@
     if (/pedal|una corda|tre corde/.test(t)) return "pedal";
     if (/8va|8vb|15ma|15mb|octave/.test(t)) return "octave";
     if (/ritard|rallent|accelerando|tempo/.test(t)) return "tempo";
-    if (/slur|phrase|legato/.test(t)) return "slur";
+    if (/slur|phrase|legato|tie/.test(t)) return "slur";
     if (/trill|mordent|turn|shake|ornament|grace|arpeggio/.test(t)) return "ornament";
     if (/tremolo|ricochet|buzz roll|roll/.test(t)) return "tremolo";
     if (/vibrato|fall|doit|scoop|bend|smear|flip|plop|rip|lift|pitch/.test(t)) return "pitch-effect";
@@ -81,6 +81,7 @@
     let placement = String(m.placement || "").toLowerCase();
     const declaredPlacement = placement;
     const structureNoteMark = isStructureNoteMark(m, name);
+    const tieControl = /control(?:begin|end)tie/.test(t) || (commandName === "tie" && declaredPlacement !== "span");
     let band = "above", role = "event";
 
     if (/controlbeginbeam/.test(t)) { kind = "beam-control"; placement = "note"; role = "beam-join"; }
@@ -106,8 +107,8 @@
     else if (/time signature|timesig|meter/.test(t)) { kind = "meter"; placement = "structure"; role = "singleton"; band = "staff"; }
     else if (/key signature/.test(t)) { kind = "key"; placement = "structure"; role = "singleton"; band = "staff"; }
 
-    if ((kind === "tie" || /control(?:begin|end)tie/.test(t) || String(name || "").toLowerCase() === "tie") && !/texttie|tie segment/.test(t)) { kind = "tie"; placement = "note"; role = "tie"; }
-    const fixedPlacementException = /^(beam-control|stem-direction|tie|play-order)$/.test(kind) || structureNoteMark;
+    if (tieControl) { kind = "tie"; placement = "note"; role = "tie"; }
+    const fixedPlacementException = /^(beam-control|stem-direction|play-order)$/.test(kind) || tieControl || structureNoteMark;
     if (!fixedPlacementException && declaredPlacement !== "note" && /slur|phrase mark|gliss|portamento|hairpin|crescendo|diminuendo|swell|pedal|8va|8vb|15ma|15mb|octave line|let ring|vibrato|ritard|rallent|accelerando|trill extension/.test(t)) {
       placement = "span"; role = "span";
       if (/slur|phrase/.test(t)) kind = /phrase/.test(t) ? "phrase" : "slur";
@@ -145,6 +146,7 @@
     if (/swell/.test(t)) return "hairpin-swell";
     if (/phrase/.test(t)) return "phrase";
     if (/slur/.test(t)) return "slur";
+    if (/tie/.test(t)) return "tie";
     if (/pedal/.test(t)) return "pedal";
     if (/portamento/.test(t)) return "portamento";
     if (/gliss/.test(t)) return "gliss";
