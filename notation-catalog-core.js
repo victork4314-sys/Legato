@@ -1,6 +1,6 @@
 "use strict";
 (() => {
-  const VERSION = "20260728-catalog-audit-3";
+  const VERSION = "20260728-catalog-audit-4";
   const HOLD_MS = 360;
   const NORWEGIAN_KEYS = ("abcdefghijklmnopqrstuvwxyzæøå0123456789").split("")
     .concat(["É", "é", "♭", "♯", ".", ",", "-", "'", "SPACE", "DEL", "DONE"]);
@@ -73,13 +73,24 @@
     else if (kind === "structure" || placement === "structure" || /barline|segno|coda|(^|[^a-z])fine([^a-z]|$)|da.?capo|dal.?segno|start repeat|end repeat|left repeat|right repeat|repeat barline|volta|ending/.test(t)) { kind = "structure"; placement = "structure"; role = "stack"; band = /barline/.test(t) ? "barline" : "system"; }
 
     if ((kind === "tie" || /control(?:begin|end)tie/.test(t) || String(name || "").toLowerCase() === "tie") && !/texttie|tie segment/.test(t)) { kind = "tie"; placement = "note"; role = "tie"; }
-    const fixedNoteControl = /^(beam-control|stem-direction|tie)$/.test(kind);
-    if (!fixedNoteControl && declaredPlacement !== "note" && /slur|phrase mark|gliss|portamento|hairpin|crescendo|diminuendo|swell|pedal|8va|8vb|15ma|15mb|octave line|let ring|vibrato|ritard|rallent|accelerando|trill extension/.test(t)) {
+    const fixedPlacementException = /^(beam-control|stem-direction|tie)$/.test(kind);
+    if (!fixedPlacementException && declaredPlacement !== "note" && /slur|phrase mark|gliss|portamento|hairpin|crescendo|diminuendo|swell|pedal|8va|8vb|15ma|15mb|octave line|let ring|vibrato|ritard|rallent|accelerando|trill extension/.test(t)) {
       placement = "span"; role = "span";
       if (/slur|phrase/.test(t)) kind = /phrase/.test(t) ? "phrase" : "slur";
     }
     if (m.audible && placement === "event" && /^(glyph|text)$/.test(kind)) { placement = "note"; role = "stack"; }
     if (!placement) placement = /^(notehead|accidental|articulation|ornament|tremolo|note-mark|percussion|technique|pitch-effect)$/.test(kind) ? "note" : "event";
+
+    // SMuFL's declared placement is the authoritative engraving contract. Only the four
+    // beam/tie control tokens and exact stem commands intentionally override it.
+    if (!fixedPlacementException && /^(note|event|span|structure)$/.test(declaredPlacement)) {
+      placement = declaredPlacement;
+      if (placement === "span") role = "span";
+      else if (placement === "structure") role = role === "singleton" ? role : "stack";
+      else if (placement === "event" && /^(stack|replacement|span)$/.test(role)) role = "event";
+      else if (placement === "note" && /^(event|span)$/.test(role)) role = "stack";
+    }
+
     if (placement === "note" && role === "event") role = "stack";
     if (placement === "span") role = "span";
     if (placement === "structure" && band === "above") band = "system";
@@ -105,6 +116,7 @@
     if (/pedal/.test(t)) return "pedal";
     if (/portamento/.test(t)) return "portamento";
     if (/gliss/.test(t)) return "gliss";
+    if (/arpeggiato|arpeggio|wiggle/.test(t)) return "arpeggio-line";
     if (/15mb/.test(t)) return "octave-down-2";
     if (/15ma/.test(t)) return "octave-up-2";
     if (/8vb/.test(t)) return "octave-down";
