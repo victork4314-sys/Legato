@@ -1,4 +1,5 @@
 "use strict";
+// Verification-only branch: this comment triggers the same exhaustive audit without changing runtime code.
 const assert = require("assert");
 global.window = global;
 require("../smufl-catalog.js");
