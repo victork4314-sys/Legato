@@ -1,4 +1,5 @@
 "use strict";
+// Verification-only comment; production catalog pipeline is unchanged.
 global.window = global;
 require("../smufl-catalog.js");
 require("../notation-catalog-core.js");
