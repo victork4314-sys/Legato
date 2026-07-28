@@ -29,10 +29,12 @@ assert.deepStrictEqual(core.NORWEGIAN_KEYS.filter(x => ["æ", "ø", "å"].includ
 const sourceStructures = glyphs.filter(x => String(x.kind).toLowerCase() === "structure" && String(x.placement).toLowerCase() === "structure");
 const scoreStructures = sourceStructures.filter(x => core.isScoreStructure(x, x.label));
 const compositeStructures = sourceStructures.filter(x => core.isCompositePlayOrder(x, x.label));
+const structureNoteMarks = sourceStructures.filter(x => core.isStructureNoteMark(x, x.label));
 assert.strictEqual(sourceStructures.length, 93, "all source structure records must be accounted for");
-assert.strictEqual(scoreStructures.length, 31, "all genuine score structures must be identified");
-assert.strictEqual(compositeStructures.length, 62, "all note-level play-order structures must be identified");
-assert.strictEqual(scoreStructures.length + compositeStructures.length, sourceStructures.length, "no structure record may be ambiguous");
+assert.strictEqual(scoreStructures.length, 36, "all genuine score-position structures must be identified");
+assert.strictEqual(compositeStructures.length, 56, "all note-level play-order structures must be identified");
+assert.strictEqual(structureNoteMarks.length, 1, "the lyric repeat symbol must be separated from score playback");
+assert.strictEqual(scoreStructures.length + compositeStructures.length + structureNoteMarks.length, sourceStructures.length, "no structure record may be ambiguous");
 
 for (const source of glyphs) {
   const row = byId.get(source.id);
@@ -48,15 +50,27 @@ for (const source of glyphs) {
   const isTieControl = /control(?:Begin|End)Tie/i.test(sid);
   const compositePlayOrder = core.isCompositePlayOrder(source, source.label);
   const scoreStructure = core.isScoreStructure(source, source.label) && String(source.kind).toLowerCase() === "structure";
+  const structureNoteMark = core.isStructureNoteMark(source, source.label);
 
-  if (compositePlayOrder) {
+  if (structureNoteMark) {
+    assert.strictEqual(row.placement, "note", sid + " lyric repeat must attach below a note");
+    assert.strictEqual(row.kind, "note-mark", sid + " lyric repeat must use note-mark semantics");
+    assert.strictEqual(row.band, "below", sid + " lyric repeat must sit below the staff");
+    assert.strictEqual(row.audible, false, sid + " lyric repeat is engraving, not repeated music");
+  } else if (compositePlayOrder) {
     assert.strictEqual(row.placement, "note", sid + " composite structure must attach to a note");
     assert.strictEqual(row.kind, "play-order", sid + " composite structure must use play-order semantics");
     assert.strictEqual(row.audioRoute, "play-order", sid + " composite structure must be audible in sequence");
   } else if (scoreStructure) {
     assert.strictEqual(row.placement, "structure", sid + " score structure must remain structural");
     assert.strictEqual(row.kind, "structure", sid + " score structure needs score-structure semantics");
-    assert.strictEqual(row.audioRoute, "play-order", sid + " score structure must affect playback order");
+    if (core.isAudibleScoreStructure(source, source.label)) {
+      assert.strictEqual(row.audible, true, sid + " complete navigation structure must affect playback");
+      assert.strictEqual(row.audioRoute, "play-order", sid + " navigation structure must route playback order");
+    } else {
+      assert.strictEqual(row.audible, false, sid + " visual barline component must remain silent");
+      assert.strictEqual(row.audioRoute, "silent-notation", sid + " visual barline component must not fake sound");
+    }
   } else {
     if (declared === "note") assert.strictEqual(row.placement, "note", sid + " must remain note-attached");
     if (declared === "span" && !isBeamControl && !isTieControl) assert.strictEqual(row.placement, "span", sid + " must remain a span");
@@ -81,8 +95,10 @@ for (const token of ["coda", "segno", "controlBeginSlur", "controlEndSlur", "con
   assert(audit.rows.some(x => String(x.id).toLowerCase().includes(token.toLowerCase())), token + " must exist in the audited catalog");
 }
 const coda = audit.rows.find(x => String(x.id).toLowerCase().includes("coda") && x.kind === "structure");
-assert(coda && coda.placement === "structure", "Coda must use structural placement");
-assert.strictEqual(audit.rows.filter(x => x.kind === "play-order").length, 62, "all composite play-order symbols must be routed");
+assert(coda && coda.placement === "structure" && coda.audioRoute === "play-order", "Coda must use audible structural placement");
+assert.strictEqual(core.canonicalStructure({id:"repeatRightLeftThick",label:"Repeat Right Left Thick"}, "Repeat Right Left Thick"), "End repeat + Start repeat", "combined repeats must build both playback boundaries");
+assert.strictEqual(core.canonicalStructure({id:"repeat2Bars",label:"Repeat last two bars"}, "Repeat last two bars"), "Repeat previous 2 bars", "two-bar repeat must have block playback semantics");
+assert.strictEqual(audit.rows.filter(x => x.kind === "play-order").length, 56, "all composite play-order symbols must be routed");
 assert.strictEqual(audit.rows.filter(x => x.audible).length, audit.audibleChecked, "every audible entry must be counted");
 
 console.log(JSON.stringify({
@@ -92,6 +108,7 @@ console.log(JSON.stringify({
   uniqueIds: byId.size,
   scoreStructures: scoreStructures.length,
   compositePlayOrder: compositeStructures.length,
+  structureNoteMarks: structureNoteMarks.length,
   norwegianKeys: core.NORWEGIAN_KEYS.filter(x => ["æ", "ø", "å"].includes(x)),
   byPlacement: audit.byPlacement
 }, null, 2));
