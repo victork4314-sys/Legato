@@ -1,3 +1,4 @@
+# Verification-only comment; production runtime and assertions are unchanged.
 name: Catalog audit and build manifest
 
 on:
