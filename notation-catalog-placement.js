@@ -68,7 +68,7 @@
       if(!m.catalog&&m.legacy&&!/coda|segno|fine|start repeat|end repeat|barline|slur|phrase/.test(t))return baseApply.call(this,m,name,glyph);
       if(m.kind==="key"&&/key signature change/.test(t)&&typeof this.openScoreEventPanel==="function")return this.openScoreEventPanel("key",name||"Key signature",glyph||"");
       if(/^(clef|meter|rest|key)$/.test(m.kind))return baseApply.call(this,m,name,glyph);
-      if(m.kind==="tie"){if(typeof this.toggleTie==="function")this.toggleTie();return this.setState({halo:false,scoreObjectId:null});}
+      if(m.kind==="tie"&&m.placement!=="span"){if(typeof this.toggleTie==="function")this.toggleTie();return this.setState({halo:false,scoreObjectId:null});}
       if(m.kind==="structure"||m.placement==="structure")return placeStructure(this,m,name,glyph);
       if(m.placement==="span")return this.beginScoreSpan(spanType(m,name),name||m.label||m.id,glyph||m.glyph||"",null,m);
       if(m.placement==="note")return applyNote(this,m,name,glyph);
