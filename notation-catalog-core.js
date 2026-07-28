@@ -1,6 +1,6 @@
 "use strict";
 (() => {
-  const VERSION = "20260728-catalog-audit-2";
+  const VERSION = "20260728-catalog-audit-3";
   const HOLD_MS = 360;
   const NORWEGIAN_KEYS = ("abcdefghijklmnopqrstuvwxyzæøå0123456789").split("")
     .concat(["É", "é", "♭", "♯", ".", ",", "-", "'", "SPACE", "DEL", "DONE"]);
@@ -35,7 +35,7 @@
     if (/slur|phrase|legato/.test(t)) return "slur";
     if (/trill|mordent|turn|shake|ornament|grace|arpeggio/.test(t)) return "ornament";
     if (/tremolo|ricochet|buzz roll|roll/.test(t)) return "tremolo";
-    if (/fall|doit|scoop|bend|smear|flip|plop|rip|lift|pitch/.test(t)) return "pitch-effect";
+    if (/vibrato|fall|doit|scoop|bend|smear|flip|plop|rip|lift|pitch/.test(t)) return "pitch-effect";
     if (/pizz|mute|harmonic|bow|technique|open|closed|stopped/.test(t)) return "technique";
     if (/accent|staccat|tenuto|marcato|articulation/.test(t)) return "articulation";
     if (placement === "span") return "continuous-line";
@@ -48,6 +48,7 @@
     const commandName = String(name || m.label || m.id || "").trim().toLowerCase();
     let kind = String(m.kind || "glyph").toLowerCase();
     let placement = String(m.placement || "").toLowerCase();
+    const declaredPlacement = placement;
     let band = "above", role = "event";
 
     if (/controlbeginbeam/.test(t)) { kind = "beam-control"; placement = "note"; role = "beam-join"; }
@@ -61,6 +62,7 @@
     else if (/articulation|staccat|tenuto|accent|marcato|bowing/.test(t)) { kind = "articulation"; placement = "note"; role = "stack"; }
     else if (/ornament|trill|mordent|turn|grace|arpeggio/.test(t)) { kind = "ornament"; placement = "note"; role = "stack"; }
     else if (/tremolo|ricochet|buzz roll/.test(t)) { kind = "tremolo"; placement = "note"; role = "stack"; }
+    else if (declaredPlacement === "note" && /vibrato/.test(t)) { kind = "pitch-effect"; placement = "note"; role = "stack"; }
     else if (/fall|doit|scoop|bend|smear|flip|plop|rip|lift|pitch effect/.test(t)) { kind = "pitch-effect"; placement = "note"; role = "stack"; }
     else if (/playing technique|technique|pizz|mute|harmonic|open string|stopped/.test(t)) { kind = "technique"; placement = "note"; role = "stack"; }
     else if (/fermata|caesura|breath mark/.test(t)) { kind = "hold"; placement = "event"; role = "singleton"; }
@@ -72,7 +74,7 @@
 
     if ((kind === "tie" || /control(?:begin|end)tie/.test(t) || String(name || "").toLowerCase() === "tie") && !/texttie|tie segment/.test(t)) { kind = "tie"; placement = "note"; role = "tie"; }
     const fixedNoteControl = /^(beam-control|stem-direction|tie)$/.test(kind);
-    if (!fixedNoteControl && /slur|phrase mark|gliss|portamento|hairpin|crescendo|diminuendo|swell|pedal|8va|8vb|15ma|15mb|octave line|let ring|vibrato|ritard|rallent|accelerando|trill extension/.test(t)) {
+    if (!fixedNoteControl && declaredPlacement !== "note" && /slur|phrase mark|gliss|portamento|hairpin|crescendo|diminuendo|swell|pedal|8va|8vb|15ma|15mb|octave line|let ring|vibrato|ritard|rallent|accelerando|trill extension/.test(t)) {
       placement = "span"; role = "span";
       if (/slur|phrase/.test(t)) kind = /phrase/.test(t) ? "phrase" : "slur";
     }
