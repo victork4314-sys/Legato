@@ -1,6 +1,6 @@
 "use strict";
 (() => {
-  const VERSION = "20260728-catalog-audit-4";
+  const VERSION = "20260728-catalog-audit-5";
   const HOLD_MS = 360;
   const NORWEGIAN_KEYS = ("abcdefghijklmnopqrstuvwxyzæøå0123456789").split("")
     .concat(["É", "é", "♭", "♯", ".", ",", "-", "'", "SPACE", "DEL", "DONE"]);
@@ -8,6 +8,18 @@
   const textOf = (m, n) => [m && m.id, m && m.label, m && m.range, m && m.rangeId,
     m && m.group, m && m.kind, m && m.placement, m && m.sound, m && m.pattern,
     m && m.effect, m && m.technique, n].filter(Boolean).join(" ").toLowerCase();
+
+  function isScoreStructure(m, n) {
+    const t = textOf(m, n);
+    if (/barline|bar repeat|start repeat|end repeat|left repeat|right repeat|repeat barline|coda|segno|(^|[^a-z])fine([^a-z]|$)|da.?capo|dal.?segno|volta/.test(t)) return true;
+    return /ending/.test(t) && /repeats|barlines|score structure/.test([m && m.group, m && m.range].filter(Boolean).join(" ").toLowerCase());
+  }
+
+  function isCompositePlayOrder(m, n) {
+    return String(m && m.kind || "").toLowerCase() === "structure" &&
+      String(m && m.placement || "").toLowerCase() === "structure" &&
+      !isScoreStructure(m, n);
+  }
 
   function canonicalStructure(m, n) {
     const t = textOf(m, n);
@@ -24,6 +36,7 @@
 
   function audioRoute(t, kind, placement, audible) {
     if (!audible) return "silent-notation";
+    if (kind === "play-order" || kind === "structure") return "play-order";
     if (kind === "accidental") return "pitch";
     if (/fermata|caesura|breath/.test(t)) return "hold";
     if (/dynamic|sforz|rinforz|fortissimo|pianissimo|niente/.test(t) || /(^|[^a-z])(pppp|ppp|pp|mp|mf|ff|fff|ffff|fp|sfz|sffz|rfz|p|f)([^a-z]|$)/.test(t)) return "dynamic";
@@ -56,6 +69,8 @@
     else if (/^(stem up|stemup)$/.test(commandName)) { kind = "stem-direction"; placement = "note"; role = "stem-up"; }
     else if (/^(stem down|stemdown)$/.test(commandName)) { kind = "stem-direction"; placement = "note"; role = "stem-down"; }
     else if (/^(automatic stem|stem auto|stemauto)$/.test(commandName)) { kind = "stem-direction"; placement = "note"; role = "stem-auto"; }
+    else if (isCompositePlayOrder(m, name)) { kind = "play-order"; placement = "note"; role = "stack"; }
+    else if (isScoreStructure(m, name) && (kind === "structure" || placement === "structure")) { kind = "structure"; placement = "structure"; role = "stack"; band = /barline/.test(t) ? "barline" : "system"; }
     else if (/notehead|note head/.test(t) || /percussion note/.test(commandName)) { kind = /percussion/.test(t) ? "percussion" : "notehead"; placement = "note"; role = "replacement"; }
     else if (kind === "accidental" || /(^|[^a-z])accidental/.test(t) || /range accidentals|accidentals and microtones/.test(t)) { kind = "accidental"; placement = "note"; role = "replacement"; }
     else if (/fingering|string number|fret|hand sign|solf[eè]ge/.test(t)) { kind = "note-mark"; placement = "note"; role = "stack"; }
@@ -70,23 +85,20 @@
     else if (/clef/.test(t)) { kind = "clef"; placement = "structure"; role = "singleton"; band = "staff"; }
     else if (/time signature|timesig|meter/.test(t)) { kind = "meter"; placement = "structure"; role = "singleton"; band = "staff"; }
     else if (/key signature/.test(t)) { kind = "key"; placement = "structure"; role = "singleton"; band = "staff"; }
-    else if (kind === "structure" || placement === "structure" || /barline|segno|coda|(^|[^a-z])fine([^a-z]|$)|da.?capo|dal.?segno|start repeat|end repeat|left repeat|right repeat|repeat barline|volta|ending/.test(t)) { kind = "structure"; placement = "structure"; role = "stack"; band = /barline/.test(t) ? "barline" : "system"; }
 
     if ((kind === "tie" || /control(?:begin|end)tie/.test(t) || String(name || "").toLowerCase() === "tie") && !/texttie|tie segment/.test(t)) { kind = "tie"; placement = "note"; role = "tie"; }
-    const fixedPlacementException = /^(beam-control|stem-direction|tie)$/.test(kind);
+    const fixedPlacementException = /^(beam-control|stem-direction|tie|play-order)$/.test(kind);
     if (!fixedPlacementException && declaredPlacement !== "note" && /slur|phrase mark|gliss|portamento|hairpin|crescendo|diminuendo|swell|pedal|8va|8vb|15ma|15mb|octave line|let ring|vibrato|ritard|rallent|accelerando|trill extension/.test(t)) {
       placement = "span"; role = "span";
       if (/slur|phrase/.test(t)) kind = /phrase/.test(t) ? "phrase" : "slur";
     }
     if (m.audible && placement === "event" && /^(glyph|text)$/.test(kind)) { placement = "note"; role = "stack"; }
-    if (!placement) placement = /^(notehead|accidental|articulation|ornament|tremolo|note-mark|percussion|technique|pitch-effect)$/.test(kind) ? "note" : "event";
+    if (!placement) placement = /^(notehead|accidental|articulation|ornament|tremolo|note-mark|percussion|technique|pitch-effect|play-order)$/.test(kind) ? "note" : "event";
 
-    // SMuFL's declared placement is the authoritative engraving contract. Only the four
-    // beam/tie control tokens and exact stem commands intentionally override it.
     if (!fixedPlacementException && /^(note|event|span|structure)$/.test(declaredPlacement)) {
       placement = declaredPlacement;
       if (placement === "span") role = "span";
-      else if (placement === "structure") role = role === "singleton" ? role : "stack";
+      else if (placement === "structure") { kind = "structure"; role = role === "singleton" ? role : "stack"; }
       else if (placement === "event" && /^(stack|replacement|span)$/.test(role)) role = "event";
       else if (placement === "note" && /^(event|span)$/.test(role)) role = "stack";
     }
@@ -102,7 +114,7 @@
     const audible = !!m.audible && !/^(beam-control|stem-direction)$/.test(kind);
     return Object.assign(m, { kind, placement, auditBand: band, auditRole: role,
       audioRoute: audioRoute(t, kind, placement, audible),
-      curveDirection: /below|downward|down|lower/.test(t) ? "down" : /above|upward|up|upper/.test(t) ? "up" : "auto",
+      curveDirection: /below|downward|down|lower|descending|desc\b/.test(t) ? "down" : /above|upward|up|upper|ascending|asc\b/.test(t) ? "up" : "auto",
       audible, glyph: glyph || m.glyph || "", auditVersion: VERSION });
   }
 
@@ -141,7 +153,7 @@
     else if (mark.band === "stem") { left = up ? 4 : -14; top = (up ? -30 : 24) + (up ? -index * 13 : index * 13); }
     else if (mark.kind === "articulation") top = -24 - index * 14;
     else if (mark.kind === "ornament" || mark.kind === "tremolo") top = -42 - index * 17;
-    else if (mark.kind === "technique" || mark.kind === "note-mark") top = -55 - index * 15;
+    else if (mark.kind === "technique" || mark.kind === "note-mark" || mark.kind === "play-order") top = -55 - index * 15;
     else top = -34 - index * 15;
     left += Number(mark.offsetX) || 0; top += Number(mark.offsetY) || 0;
     return "position:absolute;left:" + left + "px;top:" + top + "px;z-index:6;white-space:nowrap;color:var(--ink);" +
@@ -158,6 +170,6 @@
     else console.info("[Legato catalog audit] 3451/3451 placement profiles and " + audible.length + "/" + audible.length + " audible routes checked");
   }
 
-  window.__LEGATO_CATALOG_CORE__ = { VERSION, HOLD_MS, NORWEGIAN_KEYS, textOf, canonicalStructure, classify, spanType, replacePx, markCss, auditCatalog };
+  window.__LEGATO_CATALOG_CORE__ = { VERSION, HOLD_MS, NORWEGIAN_KEYS, textOf, isScoreStructure, isCompositePlayOrder, canonicalStructure, classify, spanType, replacePx, markCss, auditCatalog };
   auditCatalog();
 })();
