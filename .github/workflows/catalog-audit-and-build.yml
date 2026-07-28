@@ -12,6 +12,17 @@ on:
       - "smufl-catalog.js"
       - "tests/catalog-audit.test.js"
       - ".github/workflows/catalog-audit-and-build.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "notation-catalog-*.js"
+      - "notation-placement-*.js"
+      - "notation-semantic-fix.js"
+      - "notation-theory-playback-fix.js"
+      - "cache-refresh.js"
+      - "smufl-catalog.js"
+      - "tests/catalog-audit.test.js"
+      - ".github/workflows/catalog-audit-and-build.yml"
   workflow_dispatch:
 
 permissions:
@@ -41,6 +52,7 @@ jobs:
       - name: Audit every catalog entry
         run: node tests/catalog-audit.test.js
       - name: Publish the tested build manifest
+        if: github.event_name == 'push'
         run: |
           python - <<'PY'
           import json
@@ -59,6 +71,7 @@ jobs:
           )
           PY
       - name: Commit the tested manifest when needed
+        if: github.event_name == 'push'
         run: |
           if git diff --quiet -- legato-build.json; then
             exit 0
