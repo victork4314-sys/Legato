@@ -41,12 +41,13 @@
     o.setState(s=>({scoreEvents:(s.scoreEvents||[]).concat([ev]).sort((x,y)=>x.p-y.p),halo:false,scoreObjectId:ev.id,selId:null,spoken:ev.name+" placed"}));
   }
 
+  function playbackMarkNames(name){return name==="End repeat + Start repeat"?["End repeat","Start repeat"]:[name];}
   function placeStructure(o,meta,name,glyph){
     const a=o.scoreAnchor(),cap=o.barCapacity(),bar=Math.max(0,Math.floor(a.p/cap)),p=bar*cap,nm=canonicalStructure(meta,name);
     const ev={id:typeof o.scoreId==="function"?o.scoreId("e"):"e"+Math.random().toString(36).slice(2,9),object:"event",type:"structure",name:nm,text:glyph||nm,glyph:glyph||meta.glyph||nm,value:nm,s:0,p,step:6,system:true,semanticKey:meta.id||nm,placement:"structure",auditBand:meta.auditBand||"system",smufl:meta.id||null,range:meta.range||null,playback:Object.assign({},meta)};
-    o.setState(s=>{const mm=Object.assign({},s.measureMarks||{}),marks=(mm[bar]||[]).slice();marks.push({g:ev.glyph,name:nm,smufl:meta.id||null,eventId:ev.id,hiddenVisual:true});mm[bar]=marks;return{scoreEvents:(s.scoreEvents||[]).concat([ev]).sort((x,y)=>x.p-y.p),measureMarks:mm,halo:false,scoreObjectId:ev.id,selId:null,spoken:nm+" placed at bar "+(bar+1)};});
+    o.setState(s=>{const mm=Object.assign({},s.measureMarks||{}),marks=(mm[bar]||[]).slice();playbackMarkNames(nm).forEach((playName,i)=>marks.push({g:i?"":ev.glyph,name:playName,smufl:meta.id||null,eventId:ev.id,hiddenVisual:true}));mm[bar]=marks;return{scoreEvents:(s.scoreEvents||[]).concat([ev]).sort((x,y)=>x.p-y.p),measureMarks:mm,halo:false,scoreObjectId:ev.id,selId:null,spoken:nm+" placed at bar "+(bar+1)};});
   }
-  function syncMarks(o){const cap=o.barCapacity(),mm={};(o.state.scoreEvents||[]).filter(e=>e.type==="structure").forEach(e=>{const b=Math.max(0,Math.floor(Number(e.p)/cap));(mm[b]=mm[b]||[]).push({g:e.glyph||e.text||e.name,name:e.name,smufl:e.smufl||null,eventId:e.id,hiddenVisual:true});});o.setState({measureMarks:mm});}
+  function syncMarks(o){const cap=o.barCapacity(),mm={};(o.state.scoreEvents||[]).filter(e=>e.type==="structure").forEach(e=>{const b=Math.max(0,Math.floor(Number(e.p)/cap));playbackMarkNames(e.name).forEach((playName,i)=>(mm[b]=mm[b]||[]).push({g:i?"":e.glyph||e.text||e.name,name:playName,smufl:e.smufl||null,eventId:e.id,hiddenVisual:true}));});o.setState({measureMarks:mm});}
   function autoCurve(o,d){if(d.curveDirection&&d.curveDirection!=="auto")return d.curveDirection;const n=(o.state.notes||[]).find(n=>!n.rest&&n.s===d.s1&&Math.abs(n.p-d.p1)<.021);if(!n)return"up";const stemUp=n.stem?n.stem==="up":!((n.voice||1)===2||(n.voice||1)===4||n.step>=8);return stemUp?"down":"up";}
 
   function install(){
