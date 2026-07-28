@@ -8,10 +8,12 @@ on:
       - "notation-placement-*.js"
       - "notation-semantic-fix.js"
       - "notation-theory-playback-fix.js"
+      - "musicxml-export-fix.js"
       - "cache-refresh.js"
       - "smufl-catalog.js"
       - "tests/catalog-audit.test.js"
       - "tests/run-catalog-audit.js"
+      - "tests/musicxml-export.test.js"
       - ".github/workflows/catalog-audit-and-build.yml"
   pull_request:
     branches: [main]
@@ -20,10 +22,12 @@ on:
       - "notation-placement-*.js"
       - "notation-semantic-fix.js"
       - "notation-theory-playback-fix.js"
+      - "musicxml-export-fix.js"
       - "cache-refresh.js"
       - "smufl-catalog.js"
       - "tests/catalog-audit.test.js"
       - "tests/run-catalog-audit.js"
+      - "tests/musicxml-export.test.js"
       - ".github/workflows/catalog-audit-and-build.yml"
   workflow_dispatch:
 
@@ -50,13 +54,19 @@ jobs:
           node --check notation-catalog-placement.js
           node --check notation-catalog-render-audio.js
           node --check notation-theory-playback-fix.js
+          node --check musicxml-export-fix.js
           node --check cache-refresh.js
           node --check tests/catalog-audit.test.js
           node --check tests/run-catalog-audit.js
+          node --check tests/musicxml-export.test.js
       - name: Audit every catalog entry
         id: catalog_audit
         continue-on-error: true
         run: node tests/run-catalog-audit.js > catalog-audit-output.txt 2>&1
+      - name: Audit Dorico MusicXML export
+        id: musicxml_audit
+        continue-on-error: true
+        run: node tests/musicxml-export.test.js > musicxml-audit-output.txt 2>&1
       - name: Upload catalog audit output
         if: always()
         uses: actions/upload-artifact@v4
@@ -65,13 +75,22 @@ jobs:
           path: catalog-audit-output.txt
           if-no-files-found: error
           retention-days: 7
-      - name: Fail when the exhaustive audit fails
-        if: steps.catalog_audit.outcome != 'success'
+      - name: Upload MusicXML audit output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: musicxml-audit-output
+          path: musicxml-audit-output.txt
+          if-no-files-found: error
+          retention-days: 7
+      - name: Fail when an exhaustive audit fails
+        if: steps.catalog_audit.outcome != 'success' || steps.musicxml_audit.outcome != 'success'
         run: |
           cat catalog-audit-output.txt
+          cat musicxml-audit-output.txt
           exit 1
       - name: Publish the tested build manifest
-        if: github.event_name == 'push' && steps.catalog_audit.outcome == 'success'
+        if: github.event_name == 'push' && steps.catalog_audit.outcome == 'success' && steps.musicxml_audit.outcome == 'success'
         run: |
           python - <<'PY'
           import json
@@ -90,7 +109,7 @@ jobs:
           )
           PY
       - name: Commit the tested manifest when needed
-        if: github.event_name == 'push' && steps.catalog_audit.outcome == 'success'
+        if: github.event_name == 'push' && steps.catalog_audit.outcome == 'success' && steps.musicxml_audit.outcome == 'success'
         run: |
           if git diff --quiet -- legato-build.json; then
             exit 0
