@@ -1,5 +1,5 @@
 "use strict";
-// Verification-only rerun after explicit note-placement precedence correction.
+// Verification-only rerun after making official SMuFL placement authoritative globally.
 const assert = require("assert");
 global.window = global;
 require("../smufl-catalog.js");
