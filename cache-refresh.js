@@ -1,7 +1,7 @@
 "use strict";
 (() => {
   const CHECK_EVERY_MS = 30000;
-  const FALLBACK_BUILD = "20260728-catalog-metadata-1";
+  const FALLBACK_BUILD = "20260728-musicxml-1";
   const currentScript = document.currentScript;
   let LOADER_BUILD = FALLBACK_BUILD;
   try {
@@ -34,7 +34,9 @@
             loadScript('./notation-catalog-metadata-corrections.js', 'data-legato-catalog-metadata', () => {
               loadScript('./notation-catalog-placement.js', 'data-legato-catalog-placement', () => {
                 loadScript('./notation-catalog-render-audio.js', 'data-legato-catalog-render-audio', () => {
-                  loadScript('./notation-theory-playback-fix.js', 'data-legato-theory-playback');
+                  loadScript('./notation-theory-playback-fix.js', 'data-legato-theory-playback', () => {
+                    loadScript('./musicxml-export-fix.js', 'data-legato-musicxml-export');
+                  });
                 });
               });
             });
