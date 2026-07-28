@@ -48,6 +48,7 @@ for (const source of glyphs) {
   const declared = String(source.placement || "").toLowerCase();
   const isBeamControl = /control(?:Begin|End)Beam/i.test(sid);
   const isTieControl = /control(?:Begin|End)Tie/i.test(sid);
+  const explicitlyNoSlur = /no.?slur|without.?slur/i.test(sid);
   const compositePlayOrder = core.isCompositePlayOrder(source, source.label);
   const scoreStructure = core.isScoreStructure(source, source.label) && String(source.kind).toLowerCase() === "structure";
   const structureNoteMark = core.isStructureNoteMark(source, source.label);
@@ -77,7 +78,7 @@ for (const source of glyphs) {
     if (declared === "event") assert.strictEqual(row.placement, "event", sid + " must remain an event");
   }
 
-  if (/slur|phrase/i.test(sid) && !isBeamControl && !isTieControl) assert.strictEqual(row.placement, "span", sid + " must be a span");
+  if (/slur|phrase/i.test(sid) && !explicitlyNoSlur && !isBeamControl && !isTieControl) assert.strictEqual(row.placement, "span", sid + " must be a span");
   if (isBeamControl) {
     assert.strictEqual(row.placement, "note", sid + " must attach to a note");
     assert.strictEqual(row.kind, "beam-control", sid + " must not become a slur");
@@ -100,6 +101,11 @@ assert.strictEqual(core.canonicalStructure({id:"repeatRightLeftThick",label:"Rep
 assert.strictEqual(core.canonicalStructure({id:"repeat2Bars",label:"Repeat last two bars"}, "Repeat last two bars"), "Repeat previous 2 bars", "two-bar repeat must have block playback semantics");
 assert.strictEqual(audit.rows.filter(x => x.kind === "play-order").length, 56, "all composite play-order symbols must be routed");
 assert.strictEqual(audit.rows.filter(x => x.audible).length, audit.audibleChecked, "every audible entry must be counted");
+
+const noSlurArticulation = byId.get("tripleTongueAboveNoSlur");
+assert(noSlurArticulation, "tripleTongueAboveNoSlur must exist in the audit");
+assert.strictEqual(noSlurArticulation.placement, "note", "No Slur triple tonguing must remain note-attached");
+assert.strictEqual(noSlurArticulation.kind, "articulation", "No Slur triple tonguing must remain an articulation");
 
 const organTieSource = glyphs.find(x => x.id === "organGermanTie");
 const tieControlSource = glyphs.find(x => x.id === "controlBeginTie");
@@ -160,6 +166,7 @@ console.log(JSON.stringify({
   compositePlayOrder: compositeStructures.length,
   structureNoteMarks: structureNoteMarks.length,
   norwegianKeys: core.NORWEGIAN_KEYS.filter(x => ["æ", "ø", "å"].includes(x)),
+  noSlurArticulation: noSlurArticulation.placement,
   tieRouting: { fullSpan: fullTieHarness.spanCalls.length, entryControl: controlTieHarness.tieCalls },
   byPlacement: audit.byPlacement
 }, null, 2));
