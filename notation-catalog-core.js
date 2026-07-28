@@ -1,6 +1,6 @@
 "use strict";
 (() => {
-  const VERSION = "20260728-catalog-audit-5";
+  const VERSION = "20260728-catalog-audit-6";
   const HOLD_MS = 360;
   const NORWEGIAN_KEYS = ("abcdefghijklmnopqrstuvwxyzæøå0123456789").split("")
     .concat(["É", "é", "♭", "♯", ".", ",", "-", "'", "SPACE", "DEL", "DONE"]);
@@ -9,20 +9,38 @@
     m && m.group, m && m.kind, m && m.placement, m && m.sound, m && m.pattern,
     m && m.effect, m && m.technique, n].filter(Boolean).join(" ").toLowerCase();
 
+  function isStructureNoteMark(m, n) {
+    return /lyricstextrepeat|text repeats/.test(textOf(m, n));
+  }
+
   function isScoreStructure(m, n) {
     const t = textOf(m, n);
-    if (/barline|bar repeat|start repeat|end repeat|left repeat|right repeat|repeat barline|coda|segno|(^|[^a-z])fine([^a-z]|$)|da.?capo|dal.?segno|volta/.test(t)) return true;
+    if (isStructureNoteMark(m, n)) return false;
+    if (/barline|bar repeat|start repeat|end repeat|left repeat|right repeat|repeat.*left|repeat.*right|repeat barline|coda|segno|(^|[^a-z])fine([^a-z]|$)|da.?capo|dal.?segno|volta/.test(t)) return true;
     return /ending/.test(t) && /repeats|barlines|score structure/.test([m && m.group, m && m.range].filter(Boolean).join(" ").toLowerCase());
   }
 
   function isCompositePlayOrder(m, n) {
     return String(m && m.kind || "").toLowerCase() === "structure" &&
       String(m && m.placement || "").toLowerCase() === "structure" &&
-      !isScoreStructure(m, n);
+      !isScoreStructure(m, n) && !isStructureNoteMark(m, n);
+  }
+
+  function isAudibleScoreStructure(m, n) {
+    const t = textOf(m, n);
+    if (!isScoreStructure(m, n)) return false;
+    if (/repeatbarlowerdot|repeatbarupperdot|repeatbarslash|repeatdots?$/.test(String(m && m.id || "").toLowerCase())) return false;
+    if (/dashed barline|dotted barline|double barline|final barline|heavy barline|heavy double barline|reverse final barline|short barline|single barline|tick barline/.test(t)) return false;
+    if (/lutebarlinefinal/.test(t)) return false;
+    return /repeat last|repeat1bar|repeat2bars|repeat4bars|start repeat|end repeat|left repeat|right repeat|repeat.*left|repeat.*right|coda|segno|da.?capo|dal.?segno|fine|volta/.test(t);
   }
 
   function canonicalStructure(m, n) {
     const t = textOf(m, n);
+    if (/repeat1bar|repeat last bar/.test(t)) return "Repeat previous 1 bar";
+    if (/repeat2bars|repeat last two bars/.test(t)) return "Repeat previous 2 bars";
+    if (/repeat4bars|repeat last four bars/.test(t)) return "Repeat previous 4 bars";
+    if (/repeatrightleft|right and left repeat|repeat right left/.test(t)) return "End repeat + Start repeat";
     if (/da.?capo|d\.c\./.test(t)) return /coda/.test(t) ? "D.C. al Coda" : /fine/.test(t) ? "D.C. al Fine" : "D.C.";
     if (/dal.?segno|d\.s\./.test(t)) return /coda/.test(t) ? "D.S. al Coda" : /fine/.test(t) ? "D.S. al Fine" : "D.S.";
     if (/to.?coda/.test(t)) return "To Coda";
@@ -62,6 +80,7 @@
     let kind = String(m.kind || "glyph").toLowerCase();
     let placement = String(m.placement || "").toLowerCase();
     const declaredPlacement = placement;
+    const structureNoteMark = isStructureNoteMark(m, name);
     let band = "above", role = "event";
 
     if (/controlbeginbeam/.test(t)) { kind = "beam-control"; placement = "note"; role = "beam-join"; }
@@ -69,6 +88,7 @@
     else if (/^(stem up|stemup)$/.test(commandName)) { kind = "stem-direction"; placement = "note"; role = "stem-up"; }
     else if (/^(stem down|stemdown)$/.test(commandName)) { kind = "stem-direction"; placement = "note"; role = "stem-down"; }
     else if (/^(automatic stem|stem auto|stemauto)$/.test(commandName)) { kind = "stem-direction"; placement = "note"; role = "stem-auto"; }
+    else if (structureNoteMark) { kind = "note-mark"; placement = "note"; role = "stack"; band = "below"; }
     else if (isCompositePlayOrder(m, name)) { kind = "play-order"; placement = "note"; role = "stack"; }
     else if (isScoreStructure(m, name) && (kind === "structure" || placement === "structure")) { kind = "structure"; placement = "structure"; role = "stack"; band = /barline/.test(t) ? "barline" : "system"; }
     else if (/notehead|note head/.test(t) || /percussion note/.test(commandName)) { kind = /percussion/.test(t) ? "percussion" : "notehead"; placement = "note"; role = "replacement"; }
@@ -87,7 +107,7 @@
     else if (/key signature/.test(t)) { kind = "key"; placement = "structure"; role = "singleton"; band = "staff"; }
 
     if ((kind === "tie" || /control(?:begin|end)tie/.test(t) || String(name || "").toLowerCase() === "tie") && !/texttie|tie segment/.test(t)) { kind = "tie"; placement = "note"; role = "tie"; }
-    const fixedPlacementException = /^(beam-control|stem-direction|tie|play-order)$/.test(kind);
+    const fixedPlacementException = /^(beam-control|stem-direction|tie|play-order)$/.test(kind) || structureNoteMark;
     if (!fixedPlacementException && declaredPlacement !== "note" && /slur|phrase mark|gliss|portamento|hairpin|crescendo|diminuendo|swell|pedal|8va|8vb|15ma|15mb|octave line|let ring|vibrato|ritard|rallent|accelerando|trill extension/.test(t)) {
       placement = "span"; role = "span";
       if (/slur|phrase/.test(t)) kind = /phrase/.test(t) ? "phrase" : "slur";
@@ -111,7 +131,7 @@
     if (/lyrics|figured bass/.test(t)) band = "below";
     if (/combining|stem|flag|beam/.test(t) && placement === "note") band = "stem";
 
-    const audible = !!m.audible && !/^(beam-control|stem-direction)$/.test(kind);
+    const audible = !!m.audible && !/^(beam-control|stem-direction)$/.test(kind) && !structureNoteMark && !(kind === "structure" && !isAudibleScoreStructure(m, name));
     return Object.assign(m, { kind, placement, auditBand: band, auditRole: role,
       audioRoute: audioRoute(t, kind, placement, audible),
       curveDirection: /below|downward|down|lower|descending|desc\b/.test(t) ? "down" : /above|upward|up|upper|ascending|asc\b/.test(t) ? "up" : "auto",
@@ -170,6 +190,6 @@
     else console.info("[Legato catalog audit] 3451/3451 placement profiles and " + audible.length + "/" + audible.length + " audible routes checked");
   }
 
-  window.__LEGATO_CATALOG_CORE__ = { VERSION, HOLD_MS, NORWEGIAN_KEYS, textOf, isScoreStructure, isCompositePlayOrder, canonicalStructure, classify, spanType, replacePx, markCss, auditCatalog };
+  window.__LEGATO_CATALOG_CORE__ = { VERSION, HOLD_MS, NORWEGIAN_KEYS, textOf, isStructureNoteMark, isScoreStructure, isCompositePlayOrder, isAudibleScoreStructure, canonicalStructure, classify, spanType, replacePx, markCss, auditCatalog };
   auditCatalog();
 })();
