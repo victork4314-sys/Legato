@@ -1,98 +1,16 @@
 "use strict";
-// Verification-only trigger; assertions below are identical to main.
-const assert = require("assert");
+// Verification-only diagnostic: list the exact structure split produced by current main.
 global.window = global;
 require("../smufl-catalog.js");
 require("../notation-catalog-core.js");
-
-const audit = global.__LEGATO_CATALOG_AUDIT__;
-const core = global.__LEGATO_CATALOG_CORE__;
 const glyphs = global.LEGATO_SMUFL_CATALOG.glyphs;
-const byId = new Map(audit.rows.map(row => [row.id, row]));
-const allowedPlacements = new Set(["note", "event", "span", "structure"]);
-const allowedAudio = new Set([
-  "silent-notation", "pitch", "hold", "dynamic", "hairpin", "glissando",
-  "pedal", "octave", "tempo", "slur", "ornament", "tremolo",
-  "pitch-effect", "technique", "articulation", "continuous-line",
-  "play-order", "audible-mark", "audible-event"
-]);
-
-assert(audit, "catalog audit did not run");
-assert(core, "catalog core did not load");
-assert.strictEqual(glyphs.length, 3451, "catalog source must contain all 3451 entries");
-assert.strictEqual(audit.checked, 3451, "every SMuFL entry must be checked");
-assert.strictEqual(audit.expected, 3451);
-assert.strictEqual(audit.failures.length, 0, "no entry may lack placement, role, kind, or audible routing");
-assert.strictEqual(new Set(glyphs.map(x => x.id)).size, 3451, "every catalog ID must be unique");
-assert.strictEqual(byId.size, 3451, "every source entry must have exactly one audit row");
-assert.deepStrictEqual(core.NORWEGIAN_KEYS.filter(x => ["æ", "ø", "å"].includes(x)), ["æ", "ø", "å"], "Norwegian letters must be on the keyboard");
-
+const core = global.__LEGATO_CATALOG_CORE__;
 const sourceStructures = glyphs.filter(x => String(x.kind).toLowerCase() === "structure" && String(x.placement).toLowerCase() === "structure");
-const scoreStructures = sourceStructures.filter(x => core.isScoreStructure(x, x.label));
-const compositeStructures = sourceStructures.filter(x => core.isCompositePlayOrder(x, x.label));
-assert.strictEqual(sourceStructures.length, 93, "all source structure records must be accounted for");
-assert.strictEqual(scoreStructures.length, 31, "all genuine score structures must be identified");
-assert.strictEqual(compositeStructures.length, 62, "all note-level play-order structures must be identified");
-assert.strictEqual(scoreStructures.length + compositeStructures.length, sourceStructures.length, "no structure record may be ambiguous");
-
-for (const source of glyphs) {
-  const row = byId.get(source.id);
-  assert(row, source.id + " is missing from the audit");
-  assert(allowedPlacements.has(row.placement), source.id + " has an unsupported placement");
-  assert(row.kind && row.role && row.band, source.id + " lacks a complete engraving profile");
-  assert(allowedAudio.has(row.audioRoute), source.id + " has an unsupported audio route");
-  assert(!row.audible || row.audioRoute !== "silent-notation", source.id + " is marked audible but has no playback route");
-
-  const sid = String(source.id || "");
-  const declared = String(source.placement || "").toLowerCase();
-  const isBeamControl = /control(?:Begin|End)Beam/i.test(sid);
-  const isTieControl = /control(?:Begin|End)Tie/i.test(sid);
-  const compositePlayOrder = core.isCompositePlayOrder(source, source.label);
-  const scoreStructure = core.isScoreStructure(source, source.label) && String(source.kind).toLowerCase() === "structure";
-
-  if (compositePlayOrder) {
-    assert.strictEqual(row.placement, "note", sid + " composite structure must attach to a note");
-    assert.strictEqual(row.kind, "play-order", sid + " composite structure must use play-order semantics");
-    assert.strictEqual(row.audioRoute, "play-order", sid + " composite structure must be audible in sequence");
-  } else if (scoreStructure) {
-    assert.strictEqual(row.placement, "structure", sid + " score structure must remain structural");
-    assert.strictEqual(row.kind, "structure", sid + " score structure needs score-structure semantics");
-    assert.strictEqual(row.audioRoute, "play-order", sid + " score structure must affect playback order");
-  } else {
-    if (declared === "note") assert.strictEqual(row.placement, "note", sid + " must remain note-attached");
-    if (declared === "span" && !isBeamControl && !isTieControl) assert.strictEqual(row.placement, "span", sid + " must remain a span");
-    if (declared === "event") assert.strictEqual(row.placement, "event", sid + " must remain an event");
-  }
-
-  if (/slur|phrase/i.test(sid) && !isBeamControl && !isTieControl) assert.strictEqual(row.placement, "span", sid + " must be a span");
-  if (isBeamControl) {
-    assert.strictEqual(row.placement, "note", sid + " must attach to a note");
-    assert.strictEqual(row.kind, "beam-control", sid + " must not become a slur");
-    assert.strictEqual(row.audible, false, sid + " is an engraving control, not a performed sound");
-  }
-  if (String(source.kind).toLowerCase() === "accidental") {
-    assert.strictEqual(row.placement, "note", sid + " accidental must attach to a note");
-    if (source.audible) assert.strictEqual(row.audioRoute, "pitch", sid + " audible accidental must alter pitch");
-  }
-  if (row.placement === "structure") assert.strictEqual(row.kind, "structure", sid + " structural entry needs structural semantics");
-  if (row.placement === "span") assert.strictEqual(row.role, "span", sid + " span needs two-point semantics");
-}
-
-for (const token of ["coda", "segno", "controlBeginSlur", "controlEndSlur", "controlBeginBeam", "controlEndBeam"]) {
-  assert(audit.rows.some(x => String(x.id).toLowerCase().includes(token.toLowerCase())), token + " must exist in the audited catalog");
-}
-const coda = audit.rows.find(x => String(x.id).toLowerCase().includes("coda") && x.kind === "structure");
-assert(coda && coda.placement === "structure", "Coda must use structural placement");
-assert.strictEqual(audit.rows.filter(x => x.kind === "play-order").length, 62, "all composite play-order symbols must be routed");
-assert.strictEqual(audit.rows.filter(x => x.audible).length, audit.audibleChecked, "every audible entry must be counted");
-
-console.log(JSON.stringify({
-  checked: audit.checked,
-  audibleChecked: audit.audibleChecked,
-  failures: audit.failures.length,
-  uniqueIds: byId.size,
-  scoreStructures: scoreStructures.length,
-  compositePlayOrder: compositeStructures.length,
-  norwegianKeys: core.NORWEGIAN_KEYS.filter(x => ["æ", "ø", "å"].includes(x)),
-  byPlacement: audit.byPlacement
+const score = sourceStructures.filter(x => core.isScoreStructure(x, x.label));
+const composite = sourceStructures.filter(x => core.isCompositePlayOrder(x, x.label));
+console.error("STRUCTURE_SPLIT " + JSON.stringify({
+  total: sourceStructures.length,
+  score: score.map(x => ({id:x.id,label:x.label,group:x.group,range:x.range})),
+  composite: composite.map(x => ({id:x.id,label:x.label,group:x.group,range:x.range}))
 }, null, 2));
+process.exit(1);
