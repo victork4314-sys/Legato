@@ -1,6 +1,6 @@
 "use strict";
 (() => {
-  const VERSION = "20260728-catalog-audit-1";
+  const VERSION = "20260728-catalog-audit-2";
   const HOLD_MS = 360;
   const NORWEGIAN_KEYS = ("abcdefghijklmnopqrstuvwxyzæøå0123456789").split("")
     .concat(["É", "é", "♭", "♯", ".", ",", "-", "'", "SPACE", "DEL", "DONE"]);
@@ -71,7 +71,8 @@
     else if (kind === "structure" || placement === "structure" || /barline|segno|coda|(^|[^a-z])fine([^a-z]|$)|da.?capo|dal.?segno|start repeat|end repeat|left repeat|right repeat|repeat barline|volta|ending/.test(t)) { kind = "structure"; placement = "structure"; role = "stack"; band = /barline/.test(t) ? "barline" : "system"; }
 
     if ((kind === "tie" || /control(?:begin|end)tie/.test(t) || String(name || "").toLowerCase() === "tie") && !/texttie|tie segment/.test(t)) { kind = "tie"; placement = "note"; role = "tie"; }
-    if (/slur|phrase mark|gliss|portamento|hairpin|crescendo|diminuendo|swell|pedal|8va|8vb|15ma|15mb|octave line|let ring|vibrato|ritard|rallent|accelerando|trill extension/.test(t)) {
+    const fixedNoteControl = /^(beam-control|stem-direction|tie)$/.test(kind);
+    if (!fixedNoteControl && /slur|phrase mark|gliss|portamento|hairpin|crescendo|diminuendo|swell|pedal|8va|8vb|15ma|15mb|octave line|let ring|vibrato|ritard|rallent|accelerando|trill extension/.test(t)) {
       placement = "span"; role = "span";
       if (/slur|phrase/.test(t)) kind = /phrase/.test(t) ? "phrase" : "slur";
     }
@@ -85,7 +86,7 @@
     if (/lyrics|figured bass/.test(t)) band = "below";
     if (/combining|stem|flag|beam/.test(t) && placement === "note") band = "stem";
 
-    const audible = !!m.audible;
+    const audible = !!m.audible && !/^(beam-control|stem-direction)$/.test(kind);
     return Object.assign(m, { kind, placement, auditBand: band, auditRole: role,
       audioRoute: audioRoute(t, kind, placement, audible),
       curveDirection: /below|downward|down|lower/.test(t) ? "down" : /above|upward|up|upper/.test(t) ? "up" : "auto",
