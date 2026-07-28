@@ -7,6 +7,7 @@ on:
       - "notation-catalog-*.js"
       - "notation-placement-*.js"
       - "notation-semantic-fix.js"
+      - "notation-theory-playback-fix.js"
       - "cache-refresh.js"
       - "smufl-catalog.js"
       - "tests/catalog-audit.test.js"
@@ -34,6 +35,7 @@ jobs:
           node --check notation-catalog-core.js
           node --check notation-catalog-placement.js
           node --check notation-catalog-render-audio.js
+          node --check notation-theory-playback-fix.js
           node --check cache-refresh.js
           node --check tests/catalog-audit.test.js
       - name: Audit every catalog entry
