@@ -2,8 +2,20 @@
 (() => {
   const C = window.__LEGATO_CATALOG_CORE__;
   if (!C) return console.error("[Legato catalog metadata] core missing");
-  const VERSION = C.VERSION + "-metadata-1";
+  const VERSION = C.VERSION + "-metadata-2";
   const baseClassify = C.classify;
+  const ROUTE_BY_KIND = {
+    "pitch-effect": "pitch-effect",
+    articulation: "articulation",
+    ornament: "ornament",
+    tremolo: "tremolo",
+    technique: "technique",
+    slur: "slur",
+    phrase: "slur",
+    tie: "slur",
+    "play-order": "play-order",
+    accidental: "pitch"
+  };
 
   function classify(meta, name, glyph) {
     const source = meta || {};
@@ -12,6 +24,11 @@
     const label = String(name || source.label || "").toLowerCase();
     const declaredPlacement = String(source.placement || "").toLowerCase();
     const declaredKind = String(source.kind || "").toLowerCase();
+
+    // A performed symbol's established kind is more reliable than incidental words
+    // in its name (for example, "Triple Tongue Above No Slur" is a rip effect,
+    // not a slur merely because its label contains the word slur).
+    if (out.audible && ROUTE_BY_KIND[out.kind]) out.audioRoute = ROUTE_BY_KIND[out.kind];
 
     // textTie is a printable character used inside beamed-note text. It is not the
     // controller's Tie command and it is not a two-point organ tie span.
