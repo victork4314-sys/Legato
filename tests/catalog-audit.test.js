@@ -1,5 +1,6 @@
 "use strict";
 // Verification-only branch: this comment triggers the same exhaustive audit without changing runtime code.
+// The workflow now preserves the exact assertion output as a downloadable artifact.
 const assert = require("assert");
 global.window = global;
 require("../smufl-catalog.js");
