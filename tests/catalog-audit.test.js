@@ -1,4 +1,5 @@
 "use strict";
+// Verification-only trigger; runtime code is identical to main.
 const assert = require("assert");
 global.window = global;
 require("../smufl-catalog.js");
