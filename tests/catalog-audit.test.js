@@ -1,4 +1,5 @@
 "use strict";
+// Verification-only trigger after beam/tie precedence correction; runtime code is identical to main.
 const assert = require("assert");
 global.window = global;
 require("../smufl-catalog.js");
