@@ -101,6 +101,56 @@ assert.strictEqual(core.canonicalStructure({id:"repeat2Bars",label:"Repeat last 
 assert.strictEqual(audit.rows.filter(x => x.kind === "play-order").length, 56, "all composite play-order symbols must be routed");
 assert.strictEqual(audit.rows.filter(x => x.audible).length, audit.audibleChecked, "every audible entry must be counted");
 
+const organTieSource = glyphs.find(x => x.id === "organGermanTie");
+const tieControlSource = glyphs.find(x => x.id === "controlBeginTie");
+assert(organTieSource, "organGermanTie must exist in the catalog");
+assert(tieControlSource, "controlBeginTie must exist in the catalog");
+const organTie = core.classify(organTieSource, organTieSource.label, organTieSource.glyph);
+const tieControl = core.classify(tieControlSource, tieControlSource.label, tieControlSource.glyph);
+assert.strictEqual(organTie.kind, "tie", "organ German tie must keep tie semantics");
+assert.strictEqual(organTie.placement, "span", "organ German tie must remain a full two-point span");
+assert.strictEqual(core.spanType(organTie, organTie.label), "tie", "organ German tie must build a tie curve");
+assert.strictEqual(tieControl.kind, "tie", "Begin Tie control must use tie semantics");
+assert.strictEqual(tieControl.placement, "note", "Begin Tie control must stay a note-entry command");
+
+class PlacementHarness {
+  constructor() {
+    this.state = { notes: [], players: [{}], staff: 0, pos: 0, step: 6, bars: 4, measureMarks: {}, scoreEvents: [], scoreSpans: [], armed: {} };
+    this.spanCalls = [];
+    this.tieCalls = 0;
+  }
+  setState(update, callback) { const patch = typeof update === "function" ? update(this.state) : update; this.state = Object.assign({}, this.state, patch || {}); if (callback) callback(); }
+  selected() { return null; }
+  scoreAnchor() { return { s: 0, p: 0, step: 6 }; }
+  scoreId(prefix) { return (prefix || "x") + "1"; }
+  barCapacity() { return 4; }
+  beginScoreSpan() { this.spanCalls.push(Array.from(arguments)); return true; }
+  toggleTie() { this.tieCalls += 1; }
+  applyCatalogCommand() { this.baseApplyCalled = true; }
+  scoreSelectableObjects() { return []; }
+  selectLogicalScoreObject() {}
+  dispatch() {}
+  deleteSelection() {}
+  selectNote() {}
+  selectScoreObject() {}
+  moveScoreObject() {}
+  deleteScoreObject() {}
+  editSelectedScoreObject() {}
+  finishScoreSpan() { return true; }
+}
+global.__dcRootName = () => "catalog-test";
+global.__dcRegistry = { "catalog-test": { Logic: PlacementHarness } };
+require("../notation-catalog-placement.js");
+const fullTieHarness = new PlacementHarness();
+fullTieHarness.applyCatalogCommand(organTieSource, organTieSource.label, organTieSource.glyph);
+assert.strictEqual(fullTieHarness.tieCalls, 0, "full tie glyph must not invoke note tie entry");
+assert.strictEqual(fullTieHarness.spanCalls.length, 1, "full tie glyph must start one span");
+assert.strictEqual(fullTieHarness.spanCalls[0][0], "tie", "full tie glyph must start a tie span");
+const controlTieHarness = new PlacementHarness();
+controlTieHarness.applyCatalogCommand(tieControlSource, tieControlSource.label, tieControlSource.glyph);
+assert.strictEqual(controlTieHarness.tieCalls, 1, "Begin Tie control must invoke note tie entry once");
+assert.strictEqual(controlTieHarness.spanCalls.length, 0, "Begin Tie control must not create a free span");
+
 console.log(JSON.stringify({
   checked: audit.checked,
   audibleChecked: audit.audibleChecked,
@@ -110,5 +160,6 @@ console.log(JSON.stringify({
   compositePlayOrder: compositeStructures.length,
   structureNoteMarks: structureNoteMarks.length,
   norwegianKeys: core.NORWEGIAN_KEYS.filter(x => ["æ", "ø", "å"].includes(x)),
+  tieRouting: { fullSpan: fullTieHarness.spanCalls.length, entryControl: controlTieHarness.tieCalls },
   byPlacement: audit.byPlacement
 }, null, 2));
