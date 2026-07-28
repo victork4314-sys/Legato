@@ -50,9 +50,24 @@ jobs:
           node --check cache-refresh.js
           node --check tests/catalog-audit.test.js
       - name: Audit every catalog entry
-        run: node tests/catalog-audit.test.js
+        id: catalog_audit
+        continue-on-error: true
+        run: node tests/catalog-audit.test.js > catalog-audit-output.txt 2>&1
+      - name: Upload catalog audit output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: catalog-audit-output
+          path: catalog-audit-output.txt
+          if-no-files-found: error
+          retention-days: 7
+      - name: Fail when the exhaustive audit fails
+        if: steps.catalog_audit.outcome != 'success'
+        run: |
+          cat catalog-audit-output.txt
+          exit 1
       - name: Publish the tested build manifest
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && steps.catalog_audit.outcome == 'success'
         run: |
           python - <<'PY'
           import json
@@ -71,7 +86,7 @@ jobs:
           )
           PY
       - name: Commit the tested manifest when needed
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && steps.catalog_audit.outcome == 'success'
         run: |
           if git diff --quiet -- legato-build.json; then
             exit 0
