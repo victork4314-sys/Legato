@@ -15,6 +15,8 @@ const allowedAudio = new Set([
   "pitch-effect", "technique", "articulation", "continuous-line",
   "play-order", "audible-mark", "audible-event"
 ]);
+const sourceById = id => glyphs.find(x => x.id === id);
+const rowById = id => byId.get(id);
 
 assert(audit, "catalog audit did not run");
 assert(core, "catalog core did not load");
@@ -38,31 +40,31 @@ assert.strictEqual(scoreStructures.length + compositeStructures.length + structu
 
 for (const source of glyphs) {
   const row = byId.get(source.id);
-  assert(row, source.id + " is missing from the audit");
-  assert(allowedPlacements.has(row.placement), source.id + " has an unsupported placement");
-  assert(row.kind && row.role && row.band, source.id + " lacks a complete engraving profile");
-  assert(allowedAudio.has(row.audioRoute), source.id + " has an unsupported audio route");
-  assert(!row.audible || row.audioRoute !== "silent-notation", source.id + " is marked audible but has no playback route");
-
   const sid = String(source.id || "");
   const declared = String(source.placement || "").toLowerCase();
-  const isBeamControl = /control(?:Begin|End)Beam/i.test(sid);
-  const isTieControl = /control(?:Begin|End)Tie/i.test(sid);
+  const beamControl = /control(?:Begin|End)Beam/i.test(sid);
+  const tieControl = /control(?:Begin|End)Tie/i.test(sid);
   const explicitlyNoSlur = /no.?slur|without.?slur/i.test(sid);
-  const compositePlayOrder = core.isCompositePlayOrder(source, source.label);
-  const scoreStructure = core.isScoreStructure(source, source.label) && String(source.kind).toLowerCase() === "structure";
-  const structureNoteMark = core.isStructureNoteMark(source, source.label);
+  const composite = core.isCompositePlayOrder(source, source.label);
+  const score = core.isScoreStructure(source, source.label) && String(source.kind).toLowerCase() === "structure";
+  const structureMark = core.isStructureNoteMark(source, source.label);
 
-  if (structureNoteMark) {
+  assert(row, sid + " is missing from the audit");
+  assert(allowedPlacements.has(row.placement), sid + " has an unsupported placement");
+  assert(row.kind && row.role && row.band, sid + " lacks a complete engraving profile");
+  assert(allowedAudio.has(row.audioRoute), sid + " has an unsupported audio route");
+  assert(!row.audible || row.audioRoute !== "silent-notation", sid + " is marked audible but has no playback route");
+
+  if (structureMark) {
     assert.strictEqual(row.placement, "note", sid + " lyric repeat must attach below a note");
     assert.strictEqual(row.kind, "note-mark", sid + " lyric repeat must use note-mark semantics");
     assert.strictEqual(row.band, "below", sid + " lyric repeat must sit below the staff");
     assert.strictEqual(row.audible, false, sid + " lyric repeat is engraving, not repeated music");
-  } else if (compositePlayOrder) {
+  } else if (composite) {
     assert.strictEqual(row.placement, "note", sid + " composite structure must attach to a note");
     assert.strictEqual(row.kind, "play-order", sid + " composite structure must use play-order semantics");
     assert.strictEqual(row.audioRoute, "play-order", sid + " composite structure must be audible in sequence");
-  } else if (scoreStructure) {
+  } else if (score) {
     assert.strictEqual(row.placement, "structure", sid + " score structure must remain structural");
     assert.strictEqual(row.kind, "structure", sid + " score structure needs score-structure semantics");
     if (core.isAudibleScoreStructure(source, source.label)) {
@@ -74,12 +76,12 @@ for (const source of glyphs) {
     }
   } else {
     if (declared === "note") assert.strictEqual(row.placement, "note", sid + " must remain note-attached");
-    if (declared === "span" && !isBeamControl && !isTieControl) assert.strictEqual(row.placement, "span", sid + " must remain a span");
+    if (declared === "span" && !beamControl && !tieControl) assert.strictEqual(row.placement, "span", sid + " must remain a span");
     if (declared === "event") assert.strictEqual(row.placement, "event", sid + " must remain an event");
   }
 
-  if (/slur|phrase/i.test(sid) && !explicitlyNoSlur && !isBeamControl && !isTieControl) assert.strictEqual(row.placement, "span", sid + " must be a span");
-  if (isBeamControl) {
+  if (/slur|phrase/i.test(sid) && !explicitlyNoSlur && !beamControl && !tieControl) assert.strictEqual(row.placement, "span", sid + " must be a span");
+  if (beamControl) {
     assert.strictEqual(row.placement, "note", sid + " must attach to a note");
     assert.strictEqual(row.kind, "beam-control", sid + " must not become a slur");
     assert.strictEqual(row.audible, false, sid + " is an engraving control, not a performed sound");
@@ -102,13 +104,19 @@ assert.strictEqual(core.canonicalStructure({id:"repeat2Bars",label:"Repeat last 
 assert.strictEqual(audit.rows.filter(x => x.kind === "play-order").length, 56, "all composite play-order symbols must be routed");
 assert.strictEqual(audit.rows.filter(x => x.audible).length, audit.audibleChecked, "every audible entry must be counted");
 
-const noSlurArticulation = byId.get("tripleTongueAboveNoSlur");
-assert(noSlurArticulation, "tripleTongueAboveNoSlur must exist in the audit");
-assert.strictEqual(noSlurArticulation.placement, "note", "No Slur triple tonguing must remain note-attached");
-assert.strictEqual(noSlurArticulation.kind, "articulation", "No Slur triple tonguing must remain an articulation");
+const noSlurRip = rowById("tripleTongueAboveNoSlur");
+assert(noSlurRip, "tripleTongueAboveNoSlur must exist in the audit");
+assert.strictEqual(noSlurRip.placement, "note", "No Slur triple tonguing must remain note-attached");
+assert.strictEqual(noSlurRip.kind, "pitch-effect", "No Slur triple tonguing must keep its Bravura rip effect");
+assert.strictEqual(noSlurRip.audioRoute, "pitch-effect", "No Slur triple tonguing must sound as a rip, not as legato");
+const printableTie = rowById("textTie");
+assert(printableTie, "textTie must exist in the audit");
+assert.strictEqual(printableTie.placement, "event", "Printable text tie must remain an event");
+assert.strictEqual(printableTie.kind, "text", "Printable text tie must remain text");
+assert.strictEqual(printableTie.audioRoute, "silent-notation", "Printable text tie must remain silent engraving");
 
-const organTieSource = glyphs.find(x => x.id === "organGermanTie");
-const tieControlSource = glyphs.find(x => x.id === "controlBeginTie");
+const organTieSource = sourceById("organGermanTie");
+const tieControlSource = sourceById("controlBeginTie");
 assert(organTieSource, "organGermanTie must exist in the catalog");
 assert(tieControlSource, "controlBeginTie must exist in the catalog");
 const organTie = core.classify(organTieSource, organTieSource.label, organTieSource.glyph);
@@ -166,7 +174,7 @@ console.log(JSON.stringify({
   compositePlayOrder: compositeStructures.length,
   structureNoteMarks: structureNoteMarks.length,
   norwegianKeys: core.NORWEGIAN_KEYS.filter(x => ["æ", "ø", "å"].includes(x)),
-  noSlurArticulation: noSlurArticulation.placement,
+  noSlurRip: noSlurRip.audioRoute,
   tieRouting: { fullSpan: fullTieHarness.spanCalls.length, entryControl: controlTieHarness.tieCalls },
   byPlacement: audit.byPlacement
 }, null, 2));
