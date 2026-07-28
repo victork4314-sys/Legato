@@ -1,6 +1,6 @@
 "use strict";
 (() => {
-  const VERSION="20260728-theory-playback-2";
+  const VERSION="20260728-theory-playback-3";
   const text=(m,n)=>[m&&m.id,m&&m.label,m&&m.kind,m&&m.range,m&&m.sound,m&&m.pattern,m&&m.effect,m&&m.technique,n].filter(Boolean).join(" ").toLowerCase();
   const percussion=t=>/timpani/.test(t)?"timpani":/wood.?block|clave/.test(t)?"woodblock":/agogo|cowbell/.test(t)?"agogo":/steel drum/.test(t)?"steel_drums":/taiko|bass drum/.test(t)?"taiko_drum":/tom/.test(t)?"melodic_tom":/cymbal|gong/.test(t)?"reverse_cymbal":/bell|triangle/.test(t)?"tinkle_bell":null;
   const intervalSteps=t=>{const m=String(t||"").match(/(?:ascending|descending|asc|desc)[^0-9]*(2nd|3rd|4th|5th|6th|7th|8th)/);if(!m)return 1;return Math.max(1,parseInt(m[1],10)-1);};
@@ -8,14 +8,18 @@
     const root=typeof window.__dcRootName==="function"?window.__dcRootName():null,entry=window.__dcRegistry&&root&&window.__dcRegistry[root],p=entry&&entry.Logic&&entry.Logic.prototype;
     if(!p||!p.__catalogRenderAudioPatch)return false;
     if(p.__legatoTheoryPlayback===VERSION)return true;
-    const baseArt=p.articulationPlayback;
+    const baseArt=p.articulationPlayback,baseTech=p.techniqueInstrument,baseRealise=p.realise,basePlayOrder=p.playOrder;
+    p.playOrder=function(){
+      const order=typeof basePlayOrder==="function"?basePlayOrder.call(this):[],mm=this.state&&this.state.measureMarks||{},map={};
+      Object.keys(mm).forEach(k=>{const bar=Number(k),names=(mm[k]||[]).map(x=>String(x.name||"")),joined=names.join(" ");let count=0;if(/Repeat previous 4 bars/.test(joined))count=4;else if(/Repeat previous 2 bars/.test(joined))count=2;else if(/Repeat previous 1 bar/.test(joined))count=1;if(!count)return;for(let i=0;i<count&&bar+i<(this.state.bars||0);i++)map[bar+i]=Math.max(0,bar-count+i);});
+      return order.map(bar=>Object.prototype.hasOwnProperty.call(map,bar)?map[bar]:bar);
+    };
     p.articulationPlayback=function(n){
       const out=baseArt.call(this,n),t=text(n&&n.noteheadPlayback,n&&n.noteheadPlayback&&n.noteheadPlayback.label);
       if(/dead|muted|cross|slash/.test(t)){out.length=Math.min(out.length,.34);out.gain=Math.min(out.gain,.62);}
       else if(/harmonic|diamond/.test(t)){out.length=Math.max(out.length,1.08);out.gain=Math.min(out.gain,.82);}
       return out;
     };
-    const baseTech=p.techniqueInstrument;
     p.techniqueInstrument=function(staff,pos,n,state){
       const s=state||this.state,base=baseTech.call(this,staff,pos,n,s),source=(s.instruments||[])[staff]||base;
       const t=[text(n&&n.noteheadPlayback,n&&n.noteheadPlayback&&n.noteheadPlayback.label),text(n&&n.percussionPlayback,n&&n.percussionPlayback&&n.percussionPlayback.label)].concat((n&&n.catalogMarks||[]).map(x=>text(x.playback,x.name))).join(" ");
@@ -27,7 +31,6 @@
       if(/mute|muted|dead/.test(t)&&/guitar/.test(source))return"electric_guitar_muted";
       return base;
     };
-    const baseRealise=p.realise;
     p.realise=function(n,m,when,dur,vel){
       const marks=n&&n.catalogMarks||[],graces=marks.filter(x=>x.audioRoute==="ornament"&&/grace|appoggiatura|acciaccatura/.test(text(x.playback,x.name))),orders=marks.filter(x=>x.audioRoute==="play-order");
       const arp=this.activeScoreSpan&&this.activeScoreSpan("arpeggio-line",n.s,n.p),aeolian=orders.find(x=>/aeolian chord/.test(text(x.playback,x.name))),spread=(arp||aeolian)&&n&&n.chord&&n.chord.length;
@@ -62,7 +65,7 @@
       return result;
     };
     Object.defineProperty(p,"__legatoTheoryPlayback",{value:VERSION,configurable:true});
-    window.__LEGATO_THEORY_AUDIO_AUDIT__={version:VERSION,graceNotes:"separate grace gesture",noteheads:"dead harmonic cluster and audible optional noteheads",percussion:"catalog family to sampled percussion voice",microtones:"cent offsets through noteMidi",playOrder:"ornament harp chant mensural interval order and arpeggio spans",ok:true};
+    window.__LEGATO_THEORY_AUDIO_AUDIT__={version:VERSION,graceNotes:"separate grace gesture",noteheads:"dead harmonic cluster and audible optional noteheads",percussion:"catalog family to sampled percussion voice",microtones:"cent offsets through noteMidi",playOrder:"navigation repeats, measure repeats, ornament harp chant mensural interval order and arpeggio spans",ok:true};
     return true;
   }
   if(!install()){let n=0,t=setInterval(()=>{if(install()||++n>240)clearInterval(t);},50);}
