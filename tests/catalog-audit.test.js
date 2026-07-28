@@ -1,5 +1,5 @@
 "use strict";
-// Verification-only rerun after making official SMuFL placement authoritative globally.
+// Verification-only diagnostic for the catalog's composite-structure metadata.
 const assert = require("assert");
 global.window = global;
 require("../smufl-catalog.js");
@@ -9,6 +9,11 @@ const audit = global.__LEGATO_CATALOG_AUDIT__;
 const core = global.__LEGATO_CATALOG_CORE__;
 const glyphs = global.LEGATO_SMUFL_CATALOG.glyphs;
 const byId = new Map(audit.rows.map(row => [row.id, row]));
+const diagnosticId = "ornamentPrecompDescendingSlide";
+console.error("CATALOG_DIAGNOSTIC " + JSON.stringify({
+  source: glyphs.find(x => x.id === diagnosticId),
+  classified: byId.get(diagnosticId)
+}, null, 2));
 const allowedPlacements = new Set(["note", "event", "span", "structure"]);
 const allowedAudio = new Set([
   "silent-notation", "pitch", "hold", "dynamic", "hairpin", "glissando",
