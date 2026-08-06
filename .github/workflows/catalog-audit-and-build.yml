@@ -11,6 +11,7 @@ on:
       - "musicxml-export-fix.js"
       - "legato-voice-language.js"
       - "legato-voice-control.js"
+      - "legato-voice-dictation-fallback.js"
       - "cache-refresh.js"
       - "smufl-catalog.js"
       - "tests/catalog-audit.test.js"
@@ -18,6 +19,7 @@ on:
       - "tests/musicxml-export.test.js"
       - "tests/voice-language.test.js"
       - "tests/voice-runtime.test.js"
+      - "tests/voice-dictation-fallback.test.js"
       - ".github/workflows/catalog-audit-and-build.yml"
   pull_request:
     branches: [main]
@@ -29,6 +31,7 @@ on:
       - "musicxml-export-fix.js"
       - "legato-voice-language.js"
       - "legato-voice-control.js"
+      - "legato-voice-dictation-fallback.js"
       - "cache-refresh.js"
       - "smufl-catalog.js"
       - "tests/catalog-audit.test.js"
@@ -36,6 +39,7 @@ on:
       - "tests/musicxml-export.test.js"
       - "tests/voice-language.test.js"
       - "tests/voice-runtime.test.js"
+      - "tests/voice-dictation-fallback.test.js"
       - ".github/workflows/catalog-audit-and-build.yml"
   workflow_dispatch:
 
@@ -65,12 +69,14 @@ jobs:
           node --check musicxml-export-fix.js
           node --check legato-voice-language.js
           node --check legato-voice-control.js
+          node --check legato-voice-dictation-fallback.js
           node --check cache-refresh.js
           node --check tests/catalog-audit.test.js
           node --check tests/run-catalog-audit.js
           node --check tests/musicxml-export.test.js
           node --check tests/voice-language.test.js
           node --check tests/voice-runtime.test.js
+          node --check tests/voice-dictation-fallback.test.js
       - name: Audit every catalog entry
         id: catalog_audit
         continue-on-error: true
@@ -87,6 +93,10 @@ jobs:
         id: voice_runtime
         continue-on-error: true
         run: node tests/voice-runtime.test.js > voice-runtime-output.txt 2>&1
+      - name: Test iPad Dictation fallback
+        id: voice_dictation
+        continue-on-error: true
+        run: node tests/voice-dictation-fallback.test.js > voice-dictation-output.txt 2>&1
       - name: Upload catalog audit output
         if: always()
         uses: actions/upload-artifact@v4
@@ -111,18 +121,20 @@ jobs:
           path: |
             voice-language-output.txt
             voice-runtime-output.txt
+            voice-dictation-output.txt
           if-no-files-found: error
           retention-days: 7
       - name: Fail when an exhaustive audit fails
-        if: steps.catalog_audit.outcome != 'success' || steps.musicxml_audit.outcome != 'success' || steps.voice_language.outcome != 'success' || steps.voice_runtime.outcome != 'success'
+        if: steps.catalog_audit.outcome != 'success' || steps.musicxml_audit.outcome != 'success' || steps.voice_language.outcome != 'success' || steps.voice_runtime.outcome != 'success' || steps.voice_dictation.outcome != 'success'
         run: |
           cat catalog-audit-output.txt
           cat musicxml-audit-output.txt
           cat voice-language-output.txt
           cat voice-runtime-output.txt
+          cat voice-dictation-output.txt
           exit 1
       - name: Publish the tested build manifest
-        if: github.event_name == 'push' && steps.catalog_audit.outcome == 'success' && steps.musicxml_audit.outcome == 'success' && steps.voice_language.outcome == 'success' && steps.voice_runtime.outcome == 'success'
+        if: github.event_name == 'push' && steps.catalog_audit.outcome == 'success' && steps.musicxml_audit.outcome == 'success' && steps.voice_language.outcome == 'success' && steps.voice_runtime.outcome == 'success' && steps.voice_dictation.outcome == 'success'
         run: |
           python - <<'PY'
           import json
@@ -137,13 +149,14 @@ jobs:
                       "catalogEntries": 3451,
                       "voiceLanguageTests": 64,
                       "voiceRuntimeTests": 19,
+                      "voiceDictationFallbackTests": 10,
                   },
                   indent=2,
               ) + "\n"
           )
           PY
       - name: Commit the tested manifest when needed
-        if: github.event_name == 'push' && steps.catalog_audit.outcome == 'success' && steps.musicxml_audit.outcome == 'success' && steps.voice_language.outcome == 'success' && steps.voice_runtime.outcome == 'success'
+        if: github.event_name == 'push' && steps.catalog_audit.outcome == 'success' && steps.musicxml_audit.outcome == 'success' && steps.voice_language.outcome == 'success' && steps.voice_runtime.outcome == 'success' && steps.voice_dictation.outcome == 'success'
         run: |
           if git diff --quiet -- legato-build.json; then
             exit 0
