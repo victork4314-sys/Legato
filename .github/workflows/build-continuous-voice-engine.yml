@@ -1,0 +1,159 @@
+name: Build continuous voice engine
+
+on:
+  push:
+    branches: [agent/real-continuous-voice-control]
+    paths:
+      - whisper-build.lock
+      - scripts/patch-whisper-command.py
+      - .github/workflows/build-continuous-voice-engine.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: legato-continuous-voice-engine
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: agent/real-continuous-voice-control
+
+      - name: Stop when the generated engine is current
+        id: current
+        shell: bash
+        run: |
+          set -euo pipefail
+          if test -s vendor/whisper-command/command.js \
+            && test -s vendor/whisper-command/helpers.js \
+            && test -s vendor/whisper-command/build.json \
+            && test -s coi-serviceworker.js; then
+            python - <<'PY'
+          import json
+          from pathlib import Path
+          pins = dict(line.split('=', 1) for line in Path('whisper-build.lock').read_text().splitlines() if '=' in line)
+          build = json.loads(Path('vendor/whisper-command/build.json').read_text())
+          current = (
+              build.get('whisperCppTag') == pins['whisper_cpp_tag']
+              and build.get('emscripten') == pins['emscripten_version']
+              and build.get('model') == pins['model']
+              and build.get('modelSha256') == pins['model_sha256']
+              and build.get('directPatch', {}).get('patchVersion') == 'legato-direct-command-v2'
+          )
+          print('true' if current else 'false')
+          Path('/tmp/engine-current').write_text('true' if current else 'false')
+          PY
+          else
+            echo false > /tmp/engine-current
+          fi
+          echo "value=$(cat /tmp/engine-current)" >> "$GITHUB_OUTPUT"
+
+      - name: Install pinned Emscripten
+        if: steps.current.outputs.value != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          source whisper-build.lock
+          git clone --depth 1 https://github.com/emscripten-core/emsdk.git /tmp/emsdk
+          /tmp/emsdk/emsdk install "$emscripten_version"
+          /tmp/emsdk/emsdk activate "$emscripten_version"
+
+      - name: Fetch and patch pinned whisper.cpp
+        if: steps.current.outputs.value != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          source whisper-build.lock
+          git clone --depth 1 --branch "$whisper_cpp_tag" https://github.com/ggml-org/whisper.cpp.git /tmp/whisper.cpp
+          git -C /tmp/whisper.cpp rev-parse HEAD > /tmp/whisper-commit.txt
+          python scripts/patch-whisper-command.py --self-test
+          python scripts/patch-whisper-command.py /tmp/whisper.cpp
+          grep -q 'LEGATO_DIRECT_COMMANDS: no wake phrase' /tmp/whisper.cpp/examples/command.wasm/emscripten.cpp
+          grep -q 'LEGATO_DIRECT_COMMANDS: stop the C++ worker' /tmp/whisper.cpp/examples/command.wasm/emscripten.cpp
+          ! grep -q 'const std::string command = ::trim(txt.substr(best_len));' /tmp/whisper.cpp/examples/command.wasm/emscripten.cpp
+          grep -q 'PTHREAD_POOL_SIZE=4' /tmp/whisper.cpp/examples/command.wasm/CMakeLists.txt
+          grep -q 'INITIAL_MEMORY=512MB' /tmp/whisper.cpp/examples/command.wasm/CMakeLists.txt
+
+      - name: Compile the patched browser engine
+        if: steps.current.outputs.value != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          source whisper-build.lock
+          source /tmp/emsdk/emsdk_env.sh
+          emcmake cmake -S /tmp/whisper.cpp -B /tmp/whisper-build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DWHISPER_WASM_SINGLE_FILE=ON \
+            -DWHISPER_BUILD_TESTS=OFF \
+            -DWHISPER_BUILD_SERVER=OFF \
+            -DGGML_OPENMP=OFF
+          cmake --build /tmp/whisper-build --target "$build_target" --parallel 2
+
+      - name: Package and verify exact generated files
+        if: steps.current.outputs.value != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          command_js=/tmp/whisper-build/bin/command.wasm/command.js
+          helpers_js=/tmp/whisper-build/bin/command.wasm/helpers.js
+          coi_js=/tmp/whisper.cpp/examples/coi-serviceworker.js
+
+          test -s "$command_js"
+          test -s "$helpers_js"
+          test -s "$coi_js"
+          test "$(wc -c < "$command_js")" -gt 1000000
+
+          rm -rf vendor/whisper-command
+          mkdir -p vendor/whisper-command
+          cp "$command_js" vendor/whisper-command/command.js
+          cp "$helpers_js" vendor/whisper-command/helpers.js
+          cp "$coi_js" coi-serviceworker.js
+
+          node --check vendor/whisper-command/command.js
+          node --check vendor/whisper-command/helpers.js
+          node --check coi-serviceworker.js
+
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+
+          pins = dict(line.split('=', 1) for line in Path('whisper-build.lock').read_text().splitlines() if '=' in line)
+          patch = json.loads(Path('/tmp/whisper.cpp/legato-direct-command-build.json').read_text())
+          files = {}
+          for path in sorted(Path('vendor/whisper-command').glob('*')):
+              if path.is_file():
+                  data = path.read_bytes()
+                  files[str(path)] = {'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest()}
+          sw = Path('coi-serviceworker.js').read_bytes()
+          files['coi-serviceworker.js'] = {'bytes': len(sw), 'sha256': hashlib.sha256(sw).hexdigest()}
+          Path('vendor/whisper-command/build.json').write_text(json.dumps({
+              'whisperCppTag': pins['whisper_cpp_tag'],
+              'whisperCppCommit': Path('/tmp/whisper-commit.txt').read_text().strip(),
+              'emscripten': pins['emscripten_version'],
+              'buildTarget': pins['build_target'],
+              'execution': pins['execution'],
+              'model': pins['model'],
+              'modelSha256': pins['model_sha256'],
+              'directPatch': patch,
+              'files': files,
+          }, indent=2) + '\n')
+          PY
+
+      - name: Commit the exact compiled engine
+        if: steps.current.outputs.value != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add vendor/whisper-command coi-serviceworker.js
+          git commit -m "Build patched continuous on-device voice engine"
+          git push origin HEAD:agent/real-continuous-voice-control
