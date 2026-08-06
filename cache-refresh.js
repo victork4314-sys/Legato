@@ -1,7 +1,7 @@
 "use strict";
 (() => {
   const CHECK_EVERY_MS = 30000;
-  const FALLBACK_BUILD = "20260806-ipad-dictation-fallback-1";
+  const FALLBACK_BUILD = "20260806-continuous-direct-voice-1";
   const currentScript = document.currentScript;
   let LOADER_BUILD = FALLBACK_BUILD;
   try {
@@ -37,8 +37,8 @@
                   loadScript('./notation-theory-playback-fix.js', 'data-legato-theory-playback', () => {
                     loadScript('./musicxml-export-fix.js', 'data-legato-musicxml-export', () => {
                       loadScript('./legato-voice-language.js', 'data-legato-voice-language', () => {
-                        loadScript('./legato-voice-control.js', 'data-legato-voice-control', () => {
-                          loadScript('./legato-voice-dictation-fallback.js', 'data-legato-voice-dictation-fallback');
+                        loadScript('./legato-local-speech-engine.js', 'data-legato-local-speech-engine', () => {
+                          loadScript('./legato-voice-control.js', 'data-legato-voice-control');
                         });
                       });
                     });
