@@ -3,52 +3,8 @@ name: Catalog audit and build manifest
 on:
   push:
     branches: [main]
-    paths:
-      - "notation-catalog-*.js"
-      - "notation-placement-*.js"
-      - "notation-semantic-fix.js"
-      - "notation-theory-playback-fix.js"
-      - "musicxml-export-fix.js"
-      - "legato-voice-language.js"
-      - "legato-local-speech-engine.js"
-      - "legato-voice-control.js"
-      - "cache-refresh.js"
-      - "coi-serviceworker.js"
-      - "vendor/whisper-command/**"
-      - "whisper-build.lock"
-      - "smufl-catalog.js"
-      - "tests/catalog-audit.test.js"
-      - "tests/run-catalog-audit.js"
-      - "tests/musicxml-export.test.js"
-      - "tests/voice-language.test.js"
-      - "tests/voice-runtime.test.js"
-      - "tests/local-speech-engine.test.js"
-      - "tests/immediate-voice-control.test.js"
-      - ".github/workflows/catalog-audit-and-build.yml"
   pull_request:
     branches: [main]
-    paths:
-      - "notation-catalog-*.js"
-      - "notation-placement-*.js"
-      - "notation-semantic-fix.js"
-      - "notation-theory-playback-fix.js"
-      - "musicxml-export-fix.js"
-      - "legato-voice-language.js"
-      - "legato-local-speech-engine.js"
-      - "legato-voice-control.js"
-      - "cache-refresh.js"
-      - "coi-serviceworker.js"
-      - "vendor/whisper-command/**"
-      - "whisper-build.lock"
-      - "smufl-catalog.js"
-      - "tests/catalog-audit.test.js"
-      - "tests/run-catalog-audit.js"
-      - "tests/musicxml-export.test.js"
-      - "tests/voice-language.test.js"
-      - "tests/voice-runtime.test.js"
-      - "tests/local-speech-engine.test.js"
-      - "tests/immediate-voice-control.test.js"
-      - ".github/workflows/catalog-audit-and-build.yml"
   workflow_dispatch:
 
 permissions:
@@ -98,14 +54,15 @@ jobs:
 
           emcmake cmake -S /tmp/whisper.cpp -B /tmp/whisper-build \
             -DCMAKE_BUILD_TYPE=Release \
+            -DWHISPER_WASM_SINGLE_FILE=ON \
             -DWHISPER_BUILD_TESTS=OFF \
             -DWHISPER_BUILD_SERVER=OFF \
             -DGGML_OPENMP=OFF
           cmake --build /tmp/whisper-build --target "$build_target" --parallel 2
 
-          command_js="$(find /tmp/whisper-build -type f -path '*/command.wasm/command.js' -print -quit)"
-          helpers_js="$(find /tmp/whisper-build /tmp/whisper.cpp -type f -path '*/command.wasm/helpers.js' -print -quit)"
-          coi_js="$(find /tmp/whisper-build /tmp/whisper.cpp -type f -name 'coi-serviceworker.js' -print -quit)"
+          command_js="$(find /tmp/whisper-build -type f \( -path '*/command.wasm/command.js' -o -name 'libcommand.js' \) -print -quit)"
+          helpers_js="$(find /tmp/whisper-build /tmp/whisper.cpp/examples/command.wasm -type f -name 'helpers.js' -print -quit)"
+          coi_js="$(find /tmp/whisper-build /tmp/whisper.cpp/examples/command.wasm -type f -name 'coi-serviceworker.js' -print -quit)"
           worker_js="$(find /tmp/whisper-build -type f -name 'libcommand.worker.js' -print -quit)"
 
           test -n "$command_js"
@@ -131,11 +88,7 @@ jobs:
           import json
           from pathlib import Path
 
-          pins = {}
-          for line in Path('whisper-build.lock').read_text().splitlines():
-              if '=' in line:
-                  key, value = line.split('=', 1)
-                  pins[key] = value
+          pins = dict(line.split('=', 1) for line in Path('whisper-build.lock').read_text().splitlines() if '=' in line)
           files = {}
           for path in sorted(Path('vendor/whisper-command').glob('*')):
               if path.is_file():
@@ -148,6 +101,7 @@ jobs:
               'whisperCppCommit': Path('/tmp/whisper-commit.txt').read_text().strip(),
               'emscripten': pins['emscripten_version'],
               'buildTarget': pins['build_target'],
+              'execution': pins['execution'],
               'model': pins['model'],
               'modelSha256': pins['model_sha256'],
               'files': files,
@@ -183,6 +137,7 @@ jobs:
           assert build['whisperCppTag'] == pins['whisper_cpp_tag']
           assert build['emscripten'] == pins['emscripten_version']
           assert build['buildTarget'] == pins['build_target']
+          assert build['execution'] == pins['execution']
           assert build['model'] == pins['model']
           assert build['modelSha256'] == pins['model_sha256']
           for name, expected in build['files'].items():
@@ -216,6 +171,7 @@ jobs:
           node --check tests/voice-runtime.test.js
           node --check tests/local-speech-engine.test.js
           node --check tests/immediate-voice-control.test.js
+
       - name: Audit every catalog entry
         id: catalog_audit
         continue-on-error: true
@@ -240,8 +196,9 @@ jobs:
         id: voice_immediate
         continue-on-error: true
         run: node tests/immediate-voice-control.test.js > voice-immediate-output.txt 2>&1
+
       - name: Upload catalog audit output
-        if: always()
+        if: always() && steps.catalog_audit.outcome != 'skipped'
         uses: actions/upload-artifact@v4
         with:
           name: catalog-audit-output
@@ -249,7 +206,7 @@ jobs:
           if-no-files-found: error
           retention-days: 7
       - name: Upload MusicXML audit output
-        if: always()
+        if: always() && steps.musicxml_audit.outcome != 'skipped'
         uses: actions/upload-artifact@v4
         with:
           name: musicxml-audit-output
@@ -257,7 +214,7 @@ jobs:
           if-no-files-found: error
           retention-days: 7
       - name: Upload voice test output
-        if: always()
+        if: always() && steps.voice_language.outcome != 'skipped'
         uses: actions/upload-artifact@v4
         with:
           name: voice-control-test-output
@@ -268,6 +225,7 @@ jobs:
             voice-immediate-output.txt
           if-no-files-found: error
           retention-days: 7
+
       - name: Fail when an exhaustive audit fails
         if: steps.catalog_audit.outcome != 'success' || steps.musicxml_audit.outcome != 'success' || steps.voice_language.outcome != 'success' || steps.voice_runtime.outcome != 'success' || steps.voice_local.outcome != 'success' || steps.voice_immediate.outcome != 'success'
         run: |
@@ -278,6 +236,7 @@ jobs:
           cat voice-local-output.txt
           cat voice-immediate-output.txt
           exit 1
+
       - name: Publish the tested build manifest
         if: github.event_name == 'push' && steps.catalog_audit.outcome == 'success' && steps.musicxml_audit.outcome == 'success' && steps.voice_language.outcome == 'success' && steps.voice_runtime.outcome == 'success' && steps.voice_local.outcome == 'success' && steps.voice_immediate.outcome == 'success'
         run: |
@@ -287,35 +246,28 @@ jobs:
           from pathlib import Path
 
           engine = json.loads(Path('vendor/whisper-command/build.json').read_text())
-          Path("legato-build.json").write_text(
-              json.dumps(
-                  {
-                      "version": os.environ["GITHUB_SHA"],
-                      "audited": True,
-                      "catalogEntries": 3451,
-                      "voiceLanguageTests": 64,
-                      "voiceRuntimeTests": 19,
-                      "localSpeechEngineTests": 12,
-                      "immediateVoiceExecutionTests": 9,
-                      "voiceExecution": "immediate",
-                      "onDeviceSpeechEngine": {
-                          "whisperCppTag": engine["whisperCppTag"],
-                          "whisperCppCommit": engine["whisperCppCommit"],
-                          "emscripten": engine["emscripten"],
-                          "model": engine["model"],
-                          "modelSha256": engine["modelSha256"],
-                      },
-                  },
-                  indent=2,
-              ) + "\n"
-          )
+          Path('legato-build.json').write_text(json.dumps({
+              'version': os.environ['GITHUB_SHA'],
+              'audited': True,
+              'catalogEntries': 3451,
+              'voiceLanguageTests': 64,
+              'voiceRuntimeTests': 19,
+              'localSpeechEngineTests': 12,
+              'immediateVoiceExecutionTests': 9,
+              'voiceExecution': 'immediate',
+              'onDeviceSpeechEngine': {
+                  'whisperCppTag': engine['whisperCppTag'],
+                  'whisperCppCommit': engine['whisperCppCommit'],
+                  'emscripten': engine['emscripten'],
+                  'model': engine['model'],
+                  'modelSha256': engine['modelSha256'],
+              },
+          }, indent=2) + '\n')
           PY
       - name: Commit the tested manifest when needed
         if: github.event_name == 'push' && steps.catalog_audit.outcome == 'success' && steps.musicxml_audit.outcome == 'success' && steps.voice_language.outcome == 'success' && steps.voice_runtime.outcome == 'success' && steps.voice_local.outcome == 'success' && steps.voice_immediate.outcome == 'success'
         run: |
-          if git diff --quiet -- legato-build.json; then
-            exit 0
-          fi
+          if git diff --quiet -- legato-build.json; then exit 0; fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add legato-build.json
