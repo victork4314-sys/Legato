@@ -28,10 +28,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if test -f vendor/whisper-command/command.js \
-            && test -f vendor/whisper-command/helpers.js \
-            && test -f vendor/whisper-command/build.json \
-            && test -f coi-serviceworker.js; then
+          if test -s vendor/whisper-command/command.js \
+            && test -s vendor/whisper-command/helpers.js \
+            && test -s vendor/whisper-command/build.json \
+            && test -s coi-serviceworker.js; then
             echo "needed=false" >> "$GITHUB_OUTPUT"
           else
             echo "needed=true" >> "$GITHUB_OUTPUT"
@@ -60,52 +60,77 @@ jobs:
             -DGGML_OPENMP=OFF
           cmake --build /tmp/whisper-build --target "$build_target" --parallel 2
 
-          command_js="$(find /tmp/whisper-build -type f \( -path '*/command.wasm/command.js' -o -name 'libcommand.js' \) -print -quit)"
-          helpers_js="$(find /tmp/whisper-build /tmp/whisper.cpp/examples/command.wasm -type f -name 'helpers.js' -print -quit)"
-          coi_js="$(find /tmp/whisper-build /tmp/whisper.cpp/examples/command.wasm -type f -name 'coi-serviceworker.js' -print -quit)"
-          worker_js="$(find /tmp/whisper-build -type f -name 'libcommand.worker.js' -print -quit)"
+          command_js=/tmp/whisper-build/bin/libcommand.js
+          helpers_js=/tmp/whisper.cpp/examples/command.wasm/helpers.js
+          coi_js=/tmp/whisper.cpp/examples/coi-serviceworker.js
+          worker_js=/tmp/whisper-build/bin/libcommand.worker.js
 
-          test -n "$command_js"
-          test -n "$helpers_js"
-          test -n "$coi_js"
+          echo "Generated command engine files:"
+          find /tmp/whisper-build/bin -maxdepth 1 -type f -printf '%f %s bytes\n' | sort
+          echo "Selected command_js=$command_js"
+          echo "Selected helpers_js=$helpers_js"
+          echo "Selected coi_js=$coi_js"
+
+          test -s "$command_js"
+          test -s "$helpers_js"
+          test -s "$coi_js"
 
           rm -rf vendor/whisper-command
           mkdir -p vendor/whisper-command
           cp "$command_js" vendor/whisper-command/command.js
           cp "$helpers_js" vendor/whisper-command/helpers.js
           cp "$coi_js" coi-serviceworker.js
-          if test -n "$worker_js"; then cp "$worker_js" vendor/whisper-command/libcommand.worker.js; fi
+          if test -s "$worker_js"; then
+            cp "$worker_js" vendor/whisper-command/libcommand.worker.js
+          fi
 
           node --check vendor/whisper-command/command.js
           node --check vendor/whisper-command/helpers.js
           node --check coi-serviceworker.js
           grep -q "get_transcribed" vendor/whisper-command/command.js
           grep -q "set_audio" vendor/whisper-command/command.js
-          grep -q "FS_createDataFile" vendor/whisper-command/command.js
+          grep -q "set_status" vendor/whisper-command/command.js
+          grep -q "get_status" vendor/whisper-command/command.js
+          test "$(wc -c < vendor/whisper-command/command.js)" -gt 1000000
 
           python - <<'PY'
           import hashlib
           import json
           from pathlib import Path
 
-          pins = dict(line.split('=', 1) for line in Path('whisper-build.lock').read_text().splitlines() if '=' in line)
+          pins = dict(
+              line.split('=', 1)
+              for line in Path('whisper-build.lock').read_text().splitlines()
+              if '=' in line
+          )
           files = {}
           for path in sorted(Path('vendor/whisper-command').glob('*')):
               if path.is_file():
                   data = path.read_bytes()
-                  files[str(path)] = {'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest()}
+                  files[str(path)] = {
+                      'bytes': len(data),
+                      'sha256': hashlib.sha256(data).hexdigest(),
+                  }
           sw = Path('coi-serviceworker.js').read_bytes()
-          files['coi-serviceworker.js'] = {'bytes': len(sw), 'sha256': hashlib.sha256(sw).hexdigest()}
-          Path('vendor/whisper-command/build.json').write_text(json.dumps({
-              'whisperCppTag': pins['whisper_cpp_tag'],
-              'whisperCppCommit': Path('/tmp/whisper-commit.txt').read_text().strip(),
-              'emscripten': pins['emscripten_version'],
-              'buildTarget': pins['build_target'],
-              'execution': pins['execution'],
-              'model': pins['model'],
-              'modelSha256': pins['model_sha256'],
-              'files': files,
-          }, indent=2) + '\n')
+          files['coi-serviceworker.js'] = {
+              'bytes': len(sw),
+              'sha256': hashlib.sha256(sw).hexdigest(),
+          }
+          Path('vendor/whisper-command/build.json').write_text(
+              json.dumps(
+                  {
+                      'whisperCppTag': pins['whisper_cpp_tag'],
+                      'whisperCppCommit': Path('/tmp/whisper-commit.txt').read_text().strip(),
+                      'emscripten': pins['emscripten_version'],
+                      'buildTarget': pins['build_target'],
+                      'execution': pins['execution'],
+                      'model': pins['model'],
+                      'modelSha256': pins['model_sha256'],
+                      'files': files,
+                  },
+                  indent=2,
+              ) + '\n'
+          )
           PY
 
       - name: Commit the generated engine to this feature branch
@@ -133,7 +158,11 @@ jobs:
           from pathlib import Path
 
           build = json.loads(Path('vendor/whisper-command/build.json').read_text())
-          pins = dict(line.split('=', 1) for line in Path('whisper-build.lock').read_text().splitlines() if '=' in line)
+          pins = dict(
+              line.split('=', 1)
+              for line in Path('whisper-build.lock').read_text().splitlines()
+              if '=' in line
+          )
           assert build['whisperCppTag'] == pins['whisper_cpp_tag']
           assert build['emscripten'] == pins['emscripten_version']
           assert build['buildTarget'] == pins['build_target']
@@ -246,23 +275,28 @@ jobs:
           from pathlib import Path
 
           engine = json.loads(Path('vendor/whisper-command/build.json').read_text())
-          Path('legato-build.json').write_text(json.dumps({
-              'version': os.environ['GITHUB_SHA'],
-              'audited': True,
-              'catalogEntries': 3451,
-              'voiceLanguageTests': 64,
-              'voiceRuntimeTests': 19,
-              'localSpeechEngineTests': 12,
-              'immediateVoiceExecutionTests': 9,
-              'voiceExecution': 'immediate',
-              'onDeviceSpeechEngine': {
-                  'whisperCppTag': engine['whisperCppTag'],
-                  'whisperCppCommit': engine['whisperCppCommit'],
-                  'emscripten': engine['emscripten'],
-                  'model': engine['model'],
-                  'modelSha256': engine['modelSha256'],
-              },
-          }, indent=2) + '\n')
+          Path('legato-build.json').write_text(
+              json.dumps(
+                  {
+                      'version': os.environ['GITHUB_SHA'],
+                      'audited': True,
+                      'catalogEntries': 3451,
+                      'voiceLanguageTests': 64,
+                      'voiceRuntimeTests': 19,
+                      'localSpeechEngineTests': 12,
+                      'immediateVoiceExecutionTests': 9,
+                      'voiceExecution': 'immediate',
+                      'onDeviceSpeechEngine': {
+                          'whisperCppTag': engine['whisperCppTag'],
+                          'whisperCppCommit': engine['whisperCppCommit'],
+                          'emscripten': engine['emscripten'],
+                          'model': engine['model'],
+                          'modelSha256': engine['modelSha256'],
+                      },
+                  },
+                  indent=2,
+              ) + '\n'
+          )
           PY
       - name: Commit the tested manifest when needed
         if: github.event_name == 'push' && steps.catalog_audit.outcome == 'success' && steps.musicxml_audit.outcome == 'success' && steps.voice_language.outcome == 'success' && steps.voice_runtime.outcome == 'success' && steps.voice_local.outcome == 'success' && steps.voice_immediate.outcome == 'success'
