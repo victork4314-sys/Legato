@@ -1,0 +1,35 @@
+{
+  "whisperCppTag": "v1.8.6",
+  "whisperCppCommit": "23ee03506a91ac3d3f0071b40e66a430eebdfa1d",
+  "emscripten": "3.1.58",
+  "buildTarget": "libcommand",
+  "execution": "continuous_immediate",
+  "model": "ggml-tiny.en-q5_1.bin",
+  "modelSha256": "c77c5766f1cef09b6b7d47f21b546cbddd4157886b3b5d6d4f709e91e66c7c2b",
+  "directPatch": {
+    "patchVersion": "legato-direct-command-v2",
+    "wakePhraseRequired": false,
+    "execution": "continuous_immediate",
+    "threads": 4,
+    "pthreadPool": 4,
+    "initialMemoryMB": 512,
+    "commandHoldReads": 8,
+    "audioTimeoutMs": 2000,
+    "cppSha256": "2327209f5248d84076201859ad8325e6cde064676752f55b7bf0757db944fc64",
+    "cmakeSha256": "342b0234a1e4ff949e96159f32dd14168b18038a3bfcc472c8d8c15a47f6940c"
+  },
+  "files": {
+    "vendor/whisper-command/command.js": {
+      "bytes": 1842897,
+      "sha256": "8303e572e78479264db9c8823a79fb8595b6bccc65b5982336def5454c52eb0e"
+    },
+    "vendor/whisper-command/helpers.js": {
+      "bytes": 6521,
+      "sha256": "5371c69265551a7f7d48a7953d118e6503d8a5d480710966dfb9c2a52981a4d8"
+    },
+    "coi-serviceworker.js": {
+      "bytes": 6028,
+      "sha256": "e97bbac6017322d48aa54a5bc7ce473c725a4b7376ff245002e0ba71c3dcdd7e"
+    }
+  }
+}
