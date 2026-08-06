@@ -8,7 +8,9 @@ import json
 import sys
 from pathlib import Path
 
-PATCH_VERSION = "legato-direct-command-v1"
+PATCH_VERSION = "legato-direct-command-v2"
+COMMAND_HOLD_READS = 8
+AUDIO_TIMEOUT_MS = 2000
 
 
 def replace_once(text: str, old: str, new: str, label: str) -> str:
@@ -35,6 +37,26 @@ def patch_tree(root: Path) -> dict[str, object]:
     )
     cpp = replace_once(
         cpp,
+        "std::atomic<bool> g_running(false);",
+        """std::atomic<bool> g_running(false);
+std::atomic<bool> g_received_audio(false);
+std::atomic<int64_t> g_last_audio_ms(0);
+
+int64_t legato_now_ms() {
+    return std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count();
+}""",
+        "audio watchdog globals",
+    )
+    cpp = replace_once(
+        cpp,
+        'std::string g_transcribed   = "";',
+        f'''std::string g_transcribed   = "";
+int         g_transcribed_reads = 0; // LEGATO_DIRECT_COMMANDS: retain each final result for {COMMAND_HOLD_READS} polls''',
+        "transcript retention state",
+    )
+    cpp = replace_once(
+        cpp,
         "    bool have_prompt  = false;",
         "    bool have_prompt  = true;  // LEGATO_DIRECT_COMMANDS: no wake phrase",
         "wake phrase state",
@@ -51,6 +73,24 @@ def patch_tree(root: Path) -> dict[str, object]:
         "    std::vector<float> pcmf32_prompt;\n\n    command_set_status(\"Waiting for voice commands ...\");\n\n    const std::string k_prompt",
         "initial direct-listening status",
     )
+    cpp = replace_once(
+        cpp,
+        """    while (g_running) {
+        // delay
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));""",
+        f"""    while (g_running) {{
+        // delay
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+        // LEGATO_DIRECT_COMMANDS: stop the C++ worker after the browser stops feeding audio.
+        if (g_received_audio.load() &&
+            legato_now_ms() - g_last_audio_ms.load() > {AUDIO_TIMEOUT_MS}) {{
+            g_running = false;
+            command_set_status(\"Voice control stopped.\");
+            break;
+        }}""",
+        "audio watchdog loop",
+    )
 
     start_marker = "                    // prepend the prompt audio"
     end_marker = "                    const std::string command = ::trim(txt.substr(best_len));"
@@ -63,6 +103,82 @@ def patch_tree(root: Path) -> dict[str, object]:
                     const std::string command = ::trim(
                         ::command_transcribe(ctx, wparams, pcmf32_cur, prob, t_ms));"""
     cpp = cpp[:start] + replacement + cpp[end:]
+
+    cpp = replace_once(
+        cpp,
+        """                        g_transcribed = command;""",
+        """                        g_transcribed = command;
+                        g_transcribed_reads = 0;""",
+        "completed transcript retention",
+    )
+
+    cpp = replace_once(
+        cpp,
+        """                    g_running = true;
+                    if (g_worker.joinable()) {
+                        g_worker.join();
+                    }
+                    g_worker = std::thread([i]() {""",
+        """                    // LEGATO_DIRECT_COMMANDS: finish any previous worker before starting a new one.
+                    if (g_worker.joinable()) {
+                        g_running = false;
+                        g_worker.join();
+                    }
+                    {
+                        std::lock_guard<std::mutex> lock(g_mutex);
+                        g_transcribed.clear();
+                        g_transcribed_reads = 0;
+                    }
+                    g_received_audio = false;
+                    g_last_audio_ms = legato_now_ms();
+                    g_running = true;
+                    g_worker = std::thread([i]() {""",
+        "safe worker restart",
+    )
+
+    cpp = replace_once(
+        cpp,
+        """            memoryView.call<void>("set", audio);
+        }
+
+        return 0;""",
+        """            memoryView.call<void>("set", audio);
+        }
+
+        g_last_audio_ms = legato_now_ms();
+        g_received_audio = true;
+        return 0;""",
+        "audio feed watchdog update",
+    )
+
+    cpp = replace_once(
+        cpp,
+        """    emscripten::function("get_transcribed", emscripten::optional_override([]() {
+        std::string transcribed;
+
+        {
+            std::lock_guard<std::mutex> lock(g_mutex);
+            transcribed = std::move(g_transcribed);
+        }
+
+        return transcribed;
+    }));""",
+        f"""    emscripten::function("get_transcribed", emscripten::optional_override([]() {{
+        std::string transcribed;
+
+        {{
+            std::lock_guard<std::mutex> lock(g_mutex);
+            transcribed = g_transcribed;
+            if (!g_transcribed.empty() && ++g_transcribed_reads >= {COMMAND_HOLD_READS}) {{
+                g_transcribed.clear();
+                g_transcribed_reads = 0;
+            }}
+        }}
+
+        return transcribed;
+    }}));""",
+        "final transcript read contract",
+    )
 
     cmake = replace_once(
         cmake,
@@ -95,10 +211,21 @@ def patch_tree(root: Path) -> dict[str, object]:
         if binding not in cpp:
             raise RuntimeError(f"required command binding is missing: {binding}")
 
-    if "LEGATO_DIRECT_COMMANDS" not in cpp:
-        raise RuntimeError("direct-command marker was not applied")
+    required_markers = (
+        "LEGATO_DIRECT_COMMANDS: no wake phrase",
+        "LEGATO_DIRECT_COMMANDS: listen immediately",
+        "LEGATO_DIRECT_COMMANDS: transcribe the spoken command directly",
+        "LEGATO_DIRECT_COMMANDS: stop the C++ worker",
+        "g_transcribed_reads",
+    )
+    for marker in required_markers:
+        if marker not in cpp:
+            raise RuntimeError(f"direct-command patch marker is missing: {marker}")
+
     if "const std::string command = ::trim(txt.substr(best_len));" in cpp:
         raise RuntimeError("wake-phrase stripping remained after patch")
+    if "constexpr int N_THREAD = 8;" in cpp or "PTHREAD_POOL_SIZE=8" in cmake:
+        raise RuntimeError("desktop-sized worker configuration remained after patch")
 
     cpp_path.write_text(cpp)
     cmake_path.write_text(cmake)
@@ -106,9 +233,12 @@ def patch_tree(root: Path) -> dict[str, object]:
     result = {
         "patchVersion": PATCH_VERSION,
         "wakePhraseRequired": False,
+        "execution": "continuous_immediate",
         "threads": 4,
         "pthreadPool": 4,
         "initialMemoryMB": 512,
+        "commandHoldReads": COMMAND_HOLD_READS,
+        "audioTimeoutMs": AUDIO_TIMEOUT_MS,
         "cppSha256": hashlib.sha256(cpp.encode()).hexdigest(),
         "cmakeSha256": hashlib.sha256(cmake.encode()).hexdigest(),
     }
@@ -119,7 +249,7 @@ def patch_tree(root: Path) -> dict[str, object]:
 
 
 def self_test() -> None:
-    if PATCH_VERSION != "legato-direct-command-v1":
+    if PATCH_VERSION != "legato-direct-command-v2":
         raise RuntimeError("unexpected patch version")
     sample = "one target one"
     assert replace_once(sample, "target", "patched", "self-test") == "one patched one"
@@ -129,6 +259,8 @@ def self_test() -> None:
         pass
     else:
         raise RuntimeError("duplicate replacement self-test did not fail closed")
+    assert COMMAND_HOLD_READS >= 6
+    assert 1000 <= AUDIO_TIMEOUT_MS <= 5000
 
 
 def main(argv: list[str]) -> int:
