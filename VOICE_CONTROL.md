@@ -13,6 +13,20 @@ Voice recognition produces a visible ordered command plan first. Legato changes 
 
 Every voice-control button has a `data-ptr` label and is included in Legato's normal controller scanning system.
 
+## iPad Dictation fallback
+
+Some iPad Safari sessions expose the Web Speech API but reject Apple's recognition service with `service-not-allowed`. This is separate from ordinary website microphone permission.
+
+On iPad, Legato displays an **iPad Dictation** section inside Voice control:
+
+1. Choose **Use iPad dictation**.
+2. Tap the microphone key on the iPad keyboard and dictate the command.
+3. Choose **Preview dictated command**.
+4. Review the same ordered command plan.
+5. Choose **Run commands**.
+
+The Dictation fallback uses the same parser, catalog matching, limits, and execution paths as normal recognition. Dictated text cannot execute directly, and dictating `run commands` into the field is intentionally blocked so the Run button remains a separate confirmation.
+
 ## Examples
 
 - `Add C sharp five quarter note.`
@@ -55,6 +69,7 @@ Voice-created notation uses the same score objects, placement rules, selection b
 - Ambiguous notation names block the entire plan and ask for a more specific name.
 - Notes outside the currently visible staff and clef range are blocked before execution.
 - Run or clear must be spoken by itself.
+- Dictated fallback text must be previewed before it can be run.
 
 ## Set up my voice
 
@@ -66,7 +81,7 @@ Voice setup and pronunciation corrections are stored only in that browser's loca
 
 Voice recognition is feature-detected at runtime. It is expected to work in browsers that expose `SpeechRecognition` or `webkitSpeechRecognition` on a secure HTTPS page.
 
-Browser support and permission behavior can differ between normal Safari tabs and Home Screen web apps. When voice recognition is unavailable, Legato shows an unavailable message and leaves the score unchanged.
+Browser support and permission behavior can differ between normal Safari tabs and Home Screen web apps. When Safari rejects the recognition service, Legato shows the iPad Dictation fallback and leaves the score unchanged.
 
 ## Automated validation
 
@@ -74,5 +89,6 @@ The committed voice test suites cover:
 
 - 64 language, parsing, catalog-matching, and safety cases
 - 19 execution cases against a mocked Legato owner
+- 10 iPad Dictation fallback, error-detection, and safety-gate cases
 
-These automated tests do not replace a real microphone test in Safari on each physical device.
+These automated tests do not replace a real Dictation-key test in Safari on each physical device.
