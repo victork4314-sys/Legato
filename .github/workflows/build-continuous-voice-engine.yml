@@ -7,6 +7,12 @@ on:
       - whisper-build.lock
       - scripts/patch-whisper-command.py
       - .github/workflows/build-continuous-voice-engine.yml
+  pull_request:
+    branches: [main]
+    paths:
+      - whisper-build.lock
+      - scripts/patch-whisper-command.py
+      - .github/workflows/build-continuous-voice-engine.yml
   workflow_dispatch:
 
 permissions:
@@ -45,7 +51,7 @@ jobs:
               and build.get('emscripten') == pins['emscripten_version']
               and build.get('model') == pins['model']
               and build.get('modelSha256') == pins['model_sha256']
-              and build.get('directPatch', {}).get('patchVersion') == 'legato-direct-command-v2'
+              and build.get('directPatch', {}).get('patchVersion') == pins['direct_patch']
           )
           print('true' if current else 'false')
           Path('/tmp/engine-current').write_text('true' if current else 'false')
@@ -127,6 +133,8 @@ jobs:
 
           pins = dict(line.split('=', 1) for line in Path('whisper-build.lock').read_text().splitlines() if '=' in line)
           patch = json.loads(Path('/tmp/whisper.cpp/legato-direct-command-build.json').read_text())
+          assert patch['patchVersion'] == pins['direct_patch']
+          assert patch['wakePhraseRequired'] is False
           files = {}
           for path in sorted(Path('vendor/whisper-command').glob('*')):
               if path.is_file():
