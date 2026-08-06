@@ -1,0 +1,134 @@
+name: Apply SMuFL semantic corrections
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - index.html
+      - smufl-catalog.js
+      - tools/correct_smufl_semantics.py
+      - tools/correct_smufl_semantics_v2.py
+      - tools/correct_smufl_semantics_v3.py
+      - tools/apply_semantic_playback_corrections.py
+      - tools/apply_semantic_playback_corrections_v2.py
+      - tools/apply_semantic_playback_corrections_v3.py
+      - tools/apply_semantic_playback_corrections_v4.py
+      - tools/test_smufl_semantic_corrections.mjs
+      - tools/test_smufl_semantic_corrections_v2.mjs
+      - .github/workflows/apply-smufl-semantic-corrections.yml
+permissions:
+  contents: write
+jobs:
+  correct-audit-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/smufl-semantic-audit-corrections
+
+      - name: Correct all catalog semantics
+        run: python3 tools/correct_smufl_semantics_v3.py
+
+      - name: Apply corrected playback runtime
+        run: python3 tools/apply_semantic_playback_corrections_v4.py
+
+      - name: Audit complete corrected catalog
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json, re
+          raw = Path('smufl-catalog.js').read_text(encoding='utf-8')
+          prefix = 'window.LEGATO_SMUFL_CATALOG='
+          assert raw.startswith(prefix) and raw.rstrip().endswith(';')
+          data = json.loads(raw[len(prefix):].strip()[:-1])
+          glyphs = data['glyphs']
+          assert data['glyphCount'] == 3451, data['glyphCount']
+          assert data['rangeCount'] == 131, data['rangeCount']
+          assert len(glyphs) == data['glyphCount']
+          by_id = {g['id']: g for g in glyphs}
+          assert not [g for g in glyphs if g.get('audible') and g['id'].startswith(('control','text'))]
+          assert not [g for g in glyphs if g.get('kind') == 'grace' and re.search(r'trill|shake', str(g.get('pattern','')))]
+          assert not [g for g in glyphs if 'cluster' in (g['id'] + ' ' + g['label']).lower() and g.get('sound') == 'harmonic']
+          audible_kinds = {'dynamic','hold','grace','ornament','tremolo','pitch-effect','articulation','technique','bowing','percussion','electronic','hairpin'}
+          assert not [g for g in glyphs if g.get('kind') in audible_kinds and not g.get('audible')]
+          assert by_id['controlBeginBeam']['audible'] is False
+          assert by_id['graceNoteAcciaccaturaStemUp']['kind'] == 'grace'
+          assert by_id['graceNoteAcciaccaturaStemUp']['pattern'] == 'acciaccatura'
+          assert by_id['graceNoteSlashStemUp']['audible'] is False
+          assert by_id['breathMarkComma']['sound'] == 'breath'
+          assert by_id['dynamicForte']['velocity'] == 94
+          assert by_id['dynamicPiano']['velocity'] == 52
+          assert by_id['brassHarmonMuteStemOpen']['technique'] == 'harmon-open'
+          assert by_id['brassHarmonMuteStemClosed']['technique'] == 'harmon-closed'
+          assert any(g.get('kind') == 'pedal' and g.get('placement') == 'event' and g.get('state') == 'on' for g in glyphs)
+          assert any(g.get('kind') == 'pedal' and g.get('placement') == 'event' and g.get('state') == 'off' for g in glyphs)
+          assert any(g.get('kind') == 'electronic' and g.get('electronic') == 'mute' for g in glyphs)
+          assert any(g.get('kind') == 'electronic' and g.get('electronic') == 'unmute' for g in glyphs)
+          print('Corrected catalog audit passed:', len(glyphs), 'glyphs')
+          PY
+
+      - name: Check catalog and complete embedded JavaScript
+        run: |
+          node --check smufl-catalog.js
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          text = Path('index.html').read_text(encoding='utf-8')
+          blocks = re.findall(r'<script[^>]*>([\s\S]*?)</script>', text)
+          if not blocks:
+              raise SystemExit('No embedded JavaScript found')
+          Path('/tmp/legato-smufl-semantic-corrections.js').write_text('\n'.join(blocks), encoding='utf-8')
+          PY
+          node --check /tmp/legato-smufl-semantic-corrections.js
+
+      - name: Verify cache, semantic runtime, and protected controls
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          text = Path('index.html').read_text(encoding='utf-8')
+          required = [
+              '<meta name="legato-build" content="20260727-complete-smufl-playback-2">',
+              '<script src="./cache-refresh.js?v=20260727-complete-smufl-playback-2"></script>',
+              '<script src="./smufl-catalog.js?v=20260727-complete-smufl-playback-2"></script>',
+              '<script src="./support.js?v=20260727-complete-smufl-playback-2"></script>',
+              "meta.direction === 'swell' ? 'hairpin-swell'",
+              "if (meta.kind === 'electronic')",
+              "if (meta.kind === 'pedal' && meta.placement === 'event')",
+              'activePedalEvent(staff, pos, state)',
+              'activeElectronic(pos, state)',
+              'techniquePlaybackProfile(staff, pos, note, state)',
+              'LEGACY_REALISED_GLYPHS',
+              'semantic && !LEGACY_REALISED_GLYPHS[g]',
+              "button4: 'previous-zone', button5: 'next-zone'",
+              'const BUMPER_COMBO_MS = 120;',
+              "case 'previous-zone': if (s.zone === 3 && s.selId) { this.nudgeAccidental(-1); break; } this.cycleVisibleZone(-1); break;",
+              "case 'next-zone': if (s.zone === 3 && s.selId) { this.nudgeAccidental(1); break; } this.cycleVisibleZone(1); break;"
+          ]
+          for marker in required:
+              if marker not in text:
+                  raise SystemExit('Missing required marker: ' + marker)
+          assert text.count('20260727-complete-smufl-playback-2') == 4
+          assert '20260727-complete-smufl-playback-1' not in text
+          print('Semantic runtime and protected-controller guards passed')
+          PY
+
+      - name: Install browser runtime
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Run corrected semantics in Chromium
+        run: |
+          python3 -m http.server 4173 >/tmp/legato-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID || true' EXIT
+          node tools/test_smufl_semantic_corrections_v2.mjs
+
+      - name: Commit corrected app and catalog
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html smufl-catalog.js
+          git diff --cached --quiet || git commit -m "Correct complete SMuFL playback semantics"
+          git push origin HEAD:fix/smufl-semantic-audit-corrections

@@ -6,10 +6,10 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="legato-build" content="20260727-complete-smufl-playback-1">
-<script src="./cache-refresh.js?v=20260727-complete-smufl-playback-1"></script>
-<script src="./smufl-catalog.js?v=20260727-complete-smufl-playback-1"></script>
-<script src="./support.js?v=20260727-complete-smufl-playback-1"></script>
+<meta name="legato-build" content="20260727-complete-smufl-playback-2">
+<script src="./cache-refresh.js?v=20260727-complete-smufl-playback-2"></script>
+<script src="./smufl-catalog.js?v=20260727-complete-smufl-playback-2"></script>
+<script src="./support.js?v=20260727-complete-smufl-playback-2"></script>
 </head>
 <body>
 <x-dc>
@@ -1048,6 +1048,8 @@ const ORN_REPLACES = {};
 ['\uE566', '\uEAA4', '\uE566\uE262', '\uE566\uE260', '\uE566\uE261', '\uE56C', '\uE56D', '\uE56E', '\uE567', '\uE568', '\uE569',
  '\uE56A', '\uE56F', '\uE585', '\uE5B8', '\uE5B2', '\uE5B3', '\uE5B6', '\uE5B4', '\uE5B5', '\uE5B7', '\uE5BB', '\uE5BD', '\uE5C8',
  '\uE5C0', '\uE5C1', '\uE5E4', '\uE562', '\uE5E2', '\uE5E3'].forEach(g => { ORN_REPLACES[g] = 1; });
+const LEGACY_REALISED_GLYPHS = {};
+['\uE566','\uEAA4','\uE566\uE262','\uE566\uE260','\uE566\uE261','\uE56C','\uE56D','\uE56E','\uE567','\uE568','\uE569','\uE56A','\uE56F','\uE585','\uE5B8','\uE5B2','\uE5B3','\uE5B6','\uE5B4','\uE5B5','\uE5B7','\uE5BB','\uE5BD','\uE5C8','\uE5C0','\uE5C1','\uE5B0','\uE5B1','\uE560','\uE562','\uE5E8','\uE5E4','\uE5D1','\uE5D6','\uE5D3','\uE5D0','\uE5D5','\uE5D4','\uE5E2','\uE5E1','\uE5E3','\uE5E5','\uE634','\uE635','\uE220','\uE221','\uE222'].forEach(g => { LEGACY_REALISED_GLYPHS[g] = 1; });
 // standard rest decomposition: largest value that fits and does not cross a stronger beat
 const REST_VALS = [['w', 4], ['h', 2], ['q', 1], ['e', .5], ['s', .25], ['t', .125]];
 function restsForGap(start, end, cap) {
@@ -1655,6 +1657,7 @@ class Component extends DCLogic {
       const bpmA = Math.max(1, b0 + slope * (a - lo)), bpmB = Math.max(1, b0 + slope * (b - lo));
       seconds += Math.abs(slope) < .000001 ? (b - a) * 60 / bpmA : 60 / slope * Math.log(bpmB / bpmA);
     }
+    (s.scoreEvents || []).filter(ev => ev.type === 'electronic' && ev.p >= start - .0005 && ev.p < end - .0005 && ev.playback && ev.playback.electronic === 'pause').forEach(ev => { seconds += Math.max(0, Number(ev.playback.seconds) || 60 / this.pointTempoAt(ev.p, s)); });
     (s.scoreEvents || []).filter(ev => ev.type === 'hold' && ev.p >= start - .0005 && ev.p < end - .0005 && ev.playback).forEach(ev => {
       if (ev.playback.sound === 'fermata') seconds += Math.max(0, (Number(ev.playback.factor) || 2) - 1) * 60 / this.pointTempoAt(ev.p, s);
       else seconds += Math.max(0, Number(ev.playback.seconds) || 0);
@@ -1777,7 +1780,7 @@ class Component extends DCLogic {
     return 'treble';
   }
   catalogSpanType(meta) {
-    if (meta.kind === 'hairpin') return meta.direction === 'down' ? 'hairpin-down' : 'hairpin-up';
+    if (meta.kind === 'hairpin') return meta.direction === 'swell' ? 'hairpin-swell' : (meta.direction === 'down' ? 'hairpin-down' : 'hairpin-up');
     if (meta.kind === 'octave-line') return Number(meta.semitones) === -24 ? 'octave-down-2' : Number(meta.semitones) === 24 ? 'octave-up-2' : Number(meta.semitones) < 0 ? 'octave-down' : 'octave-up';
     if (meta.kind === 'pedal') return 'pedal';
     if (meta.kind === 'slur') return 'slur';
@@ -1816,6 +1819,14 @@ class Component extends DCLogic {
       this.placeScoreEvent(meta.kind, name, glyph, glyph, { system: false, meta: playback });
       return;
     }
+    if (meta.kind === 'electronic') {
+      this.placeScoreEvent('electronic', name, glyph, meta.electronic || name, { system: true, text: glyph || name, meta: playback });
+      return;
+    }
+    if (meta.kind === 'pedal' && meta.placement === 'event') {
+      this.placeScoreEvent('pedal-event', name, glyph, meta.state || name, { system: false, text: glyph || name, meta: playback });
+      return;
+    }
     if (meta.kind === 'tempo' && meta.placement !== 'span') {
       this.openScoreEventPanel('tempo', name, glyph);
       return;
@@ -1834,12 +1845,12 @@ class Component extends DCLogic {
       if (di >= 0) this.setDur(di);
       return;
     }
-    if (meta.placement === 'note' || /^(notehead|accidental|articulation|ornament|tremolo|pitch-effect|technique|bowing|percussion)$/.test(meta.kind)) {
+    if (meta.placement === 'note' || /^(notehead|accidental|articulation|ornament|grace|tremolo|pitch-effect|technique|bowing|percussion)$/.test(meta.kind)) {
       const patch = {};
       if (meta.kind === 'notehead') { patch.noteheadGlyph = glyph; patch.noteheadSmufl = meta.id; patch.noteheadPlayback = playback; }
       else if (meta.kind === 'accidental') { patch.acc = glyph; patch.accCents = meta.cents == null ? null : Number(meta.cents); patch.accSmufl = meta.id; }
       else if (meta.kind === 'articulation') { patch.art = glyph; patch.artPlayback = playback; }
-      else if (meta.kind === 'ornament') { patch.orn = glyph; patch.ornPlayback = playback; }
+      else if (meta.kind === 'ornament' || meta.kind === 'grace') { patch.orn = glyph; patch.ornPlayback = playback; }
       else if (meta.kind === 'tremolo') { patch.orn = glyph; patch.tremoloPlayback = playback; }
       else if (meta.kind === 'pitch-effect') { patch.orn = glyph; patch.pitchPlayback = playback; }
       else if (meta.kind === 'percussion') { patch.noteheadGlyph = glyph; patch.percussionPlayback = playback; }
@@ -1932,10 +1943,13 @@ class Component extends DCLogic {
   }
   noteMidi(note, state) {
     const s = state || this.state, clef = this.clefAt(note.s, note.p, s), key = this.keyAt(note.p, s);
-    if (note.accCents != null && isFinite(Number(note.accCents))) {
-      return midiFor(note.step, clef === 'bass', '\uE261', key, (s.clefOctaves || [])[note.s]) + Number(note.accCents) / 100;
-    }
-    return midiFor(note.step, clef === 'bass', note.acc, key, (s.clefOctaves || [])[note.s]);
+    const clefEvent = this.effectiveScoreEvent('clef', note.s, note.p, s);
+    const localOctave = clefEvent && clefEvent.playback ? Number(clefEvent.playback.semitones) || 0 : 0;
+    const base = note.accCents != null && isFinite(Number(note.accCents))
+      ? midiFor(note.step, clef === 'bass', '\uE261', key, (s.clefOctaves || [])[note.s]) + Number(note.accCents) / 100
+      : midiFor(note.step, clef === 'bass', note.acc, key, (s.clefOctaves || [])[note.s]);
+    const harmonicShift = note.noteheadPlayback && note.noteheadPlayback.sound === 'harmonic' ? 12 : 0;
+    return base + localOctave + harmonicShift;
   }
   articulationPlayback(note) {
     const p = note && note.artPlayback, name = ((p && (p.profile || p.label || p.id)) || '').toLowerCase();
@@ -1953,14 +1967,50 @@ class Component extends DCLogic {
     const s = state || this.state;
     return (s.scoreEvents || []).filter(x => x.p <= pos + .0005 && !x.system && x.s === staff && (x.type === 'technique' || (x.playback && x.playback.kind === 'technique'))).sort((a,b) => b.p-a.p)[0] || null;
   }
+  activePedalEvent(staff, pos, state) {
+    const s = state || this.state;
+    return (s.scoreEvents || []).filter(x => x.type === 'pedal-event' && x.s === staff && x.p <= pos + .0005).sort((a,b) => b.p-a.p)[0] || null;
+  }
+  nextPedalRelease(staff, pos, state) {
+    const s = state || this.state;
+    const next = (s.scoreEvents || []).filter(x => x.type === 'pedal-event' && x.s === staff && x.p > pos + .0005 && x.playback && x.playback.state === 'off').sort((a,b) => a.p-b.p)[0];
+    return next ? next.p : null;
+  }
+  activeElectronic(pos, state) {
+    const s = state || this.state;
+    return (s.scoreEvents || []).filter(x => x.type === 'electronic' && x.p <= pos + .0005).sort((a,b) => b.p-a.p)[0] || null;
+  }
+  techniquePlaybackProfile(staff, pos, note, state) {
+    const s = state || this.state, ev = this.activeTechnique(staff, pos, s);
+    const p = (note && (note.techniquePlayback || note.noteheadPlayback)) || (ev && ev.playback) || {};
+    const tech = String(p.technique || '').toLowerCase();
+    if (/pizz/.test(tech)) return { length: .55, gain: 1.05 };
+    if (/sul-ponticello|behind-bridge|scrape/.test(tech)) return { length: .72, gain: .78 };
+    if (/sul-tasto|air/.test(tech)) return { length: 1.08, gain: .66 };
+    if (/col-legno|chop|click|snap|slap/.test(tech)) return { length: .34, gain: 1.12 };
+    if (/harmon-open/.test(tech)) return { length: .9, gain: .78 };
+    if (/harmon-closed/.test(tech)) return { length: .68, gain: .58 };
+    if (/muted/.test(tech)) return { length: .72, gain: .68 };
+    if (/flutter|growl/.test(tech)) return { length: .82, gain: .9 };
+    if (/harmonic/.test(tech)) return { length: .92, gain: .72 };
+    if (p.audible && /^(technique|bowing)$/.test(String(p.kind || ''))) return { length: .86, gain: .88 };
+    return { length: 1, gain: 1 };
+  }
   techniqueInstrument(staff, pos, note, state) {
     const s = state || this.state, base = s.instruments[staff] || 'acoustic_grand_piano';
-    const ev = this.activeTechnique(staff, pos, s), p = (note && note.techniquePlayback) || (ev && ev.playback) || {}, tech = String(p.technique || p.sound || '').toLowerCase();
+    const ev = this.activeTechnique(staff, pos, s), p = (note && (note.techniquePlayback || note.noteheadPlayback)) || (ev && ev.playback) || {}, tech = String(p.technique || p.sound || '').toLowerCase();
     if (/pizz/.test(tech) && /violin|viola|cello|contrabass|string|fiddle/.test(base)) return 'pizzicato_strings';
     if (/tremolo/.test(tech) && /violin|viola|cello|contrabass|string|fiddle/.test(base)) return 'tremolo_strings';
+    if (/harmon-open|harmon-closed/.test(tech)) return 'muted_trumpet';
     if (/muted/.test(tech) && /trumpet|trombone|horn|brass/.test(base)) return 'muted_trumpet';
     if (/harmonic/.test(tech) && /guitar/.test(base)) return 'guitar_harmonics';
     if (/muted/.test(tech) && /guitar/.test(base)) return 'electric_guitar_muted';
+    if (/col-legno|chop|click|snap|slap/.test(tech)) return 'woodblock';
+    if (/behind-bridge|scrape/.test(tech)) return 'reverse_cymbal';
+    if (/sul-ponticello/.test(tech) && /violin|viola|cello|contrabass|string|fiddle/.test(base)) return 'tremolo_strings';
+    if (/sul-tasto/.test(tech) && /violin|viola|cello|contrabass|string|fiddle/.test(base)) return 'string_ensemble_1';
+    if (/flutter|growl/.test(tech)) return 'muted_trumpet';
+    if (/air/.test(tech)) return 'pan_flute';
     const percussion = (note && note.percussionPlayback) || {};
     const perc = String(percussion.instrument || percussion.label || '').toLowerCase();
     if (/timpani/.test(perc)) return 'timpani';
@@ -1970,7 +2020,10 @@ class Component extends DCLogic {
     if (/taiko|bass drum/.test(perc)) return 'taiko_drum';
     if (/tom/.test(perc)) return 'melodic_tom';
     if (/cymbal|gong/.test(perc)) return 'reverse_cymbal';
-    if (/bell|triangle/.test(perc)) return 'tinkle_bell';
+    if (/handbell|bell|triangle/.test(perc)) return 'tinkle_bell';
+    if (/siren|whistle/.test(perc)) return 'whistle';
+    if (/clap|click|snap|slap|stamp|tap|hop/.test(perc)) return 'woodblock';
+    if (/tambourine|shaker|maraca/.test(perc)) return 'agogo';
     return base;
   }
   patchSelectedScoreObject(patch, label) {
@@ -2929,6 +2982,13 @@ class Component extends DCLogic {
       const dynMap = { '\uE529': 20, '\uE52A': 30, '\uE52B': 42, '\uE520': 54, '\uE52C': 66, '\uE52D': 78, '\uE522': 92, '\uE52F': 104, '\uE530': 116, '\uE531': 124, '\uE539': 122, '\uE53B': 126, '\uE534': 96, '\uE53C': 118, '\uE526': 14 };
       const dynEv = this.effectiveScoreEvent('dynamic', n.s, n.p, s), dynGlyph = n.dyn || (dynEv && (dynEv.glyph || dynEv.value));
       let vel = Math.round(dynEv && dynEv.playback && dynEv.playback.velocity != null ? dynEv.playback.velocity : (dynGlyph && dynMap[dynGlyph] ? dynMap[dynGlyph] : 40 + (s.vel / 100) * 87));
+      const electronic = this.activeElectronic(n.p, s);
+      if (electronic && electronic.playback) {
+        const effect = electronic.playback.electronic;
+        if (effect === 'mute' || effect === 'stop') return;
+        if (effect === 'fade') vel = Math.round(vel * .58);
+        if (effect === 'level' && electronic.playback.level != null) vel = Math.round(vel * Math.max(0, Math.min(100, Number(electronic.playback.level))) / 100);
+      }
       const hair = this.activeScoreSpan(['hairpin-up', 'hairpin-down', 'hairpin-swell'], n.s, n.p, s);
       if (hair) {
         const lo = Math.min(hair.p1, hair.p2), hi = Math.max(hair.p1, hair.p2), t = Math.max(0, Math.min(1, (n.p - lo) / Math.max(.001, hi - lo)));
@@ -2938,9 +2998,11 @@ class Component extends DCLogic {
       }
       const oct = this.activeScoreSpan(['octave-up', 'octave-down', 'octave-up-2', 'octave-down-2'], n.s, n.p, s);
       if (oct) m += (oct.type === 'octave-up' ? 12 : oct.type === 'octave-down' ? -12 : oct.type === 'octave-up-2' ? 24 : -24);
-      const slur = this.activeScoreSpan(['slur', 'phrase', 'let-ring'], n.s, n.p, s), pedal = this.activeScoreSpan('pedal', n.s, n.p, s);
+      const slur = this.activeScoreSpan(['slur', 'phrase', 'let-ring'], n.s, n.p, s), pedalSpan = this.activeScoreSpan('pedal', n.s, n.p, s), pedalEvent = this.activePedalEvent(n.s, n.p, s);
+      const pedalOn = pedalEvent && pedalEvent.playback && pedalEvent.playback.state !== 'off';
       let duration = this.secondsBetween(n.p, n.p + beats, s);
-      if (pedal) duration = Math.max(duration, this.secondsBetween(n.p, Math.max(n.p + beats, Math.max(pedal.p1, pedal.p2)), s));
+      if (pedalSpan) duration = Math.max(duration, this.secondsBetween(n.p, Math.max(n.p + beats, Math.max(pedalSpan.p1, pedalSpan.p2)), s));
+      else if (pedalOn) { const release = this.nextPedalRelease(n.s, n.p, s); duration = Math.max(duration, this.secondsBetween(n.p, release == null ? Math.min(s.bars * this.barCapacity(), n.p + this.barCapacity()) : release, s)); }
       else if (slur) duration *= 1.08;
       const hold = (s.scoreEvents || []).filter(ev => ev.type === 'hold' && !ev.system && ev.s === n.s && Math.abs(ev.p - n.p) < .011).sort((a,b) => b.p-a.p)[0];
       if (hold && hold.playback) {
@@ -2948,10 +3010,10 @@ class Component extends DCLogic {
         else duration += Math.max(0, Number(hold.playback.seconds) || 0);
       }
       const decorated = ORN_REPLACES[n.orn] || n.ornPlayback || n.tremoloPlayback || n.pitchPlayback;
-      const ap = this.articulationPlayback(n);
+      const ap = this.articulationPlayback(n), tp = this.techniquePlaybackProfile(n.s, n.p, n, s);
       const originalInstrument = s.instruments[n.s], semanticInstrument = this.techniqueInstrument(n.s, n.p, n, s);
       if (semanticInstrument !== originalInstrument) s.instruments[n.s] = semanticInstrument;
-      this.playTone(m, Math.max(ac.currentTime, when), duration * (decorated ? .18 : ap.length), n.s, (decorated ? vel * .8 : vel) * ap.gain, n.art);
+      this.playTone(m, Math.max(ac.currentTime, when), duration * (decorated ? .18 : ap.length * tp.length), n.s, (decorated ? vel * .8 : vel) * ap.gain * tp.gain, n.art);
       const glide = this.activeScoreSpan(['gliss','portamento'], n.s, n.p, s);
       if (glide && Math.abs(n.p - Math.min(glide.p1, glide.p2)) < .011) {
         const endPos = Math.max(glide.p1, glide.p2), target = s.notes.filter(q => !q.rest && q.s === n.s && Math.abs(q.p - endPos) < .011).sort((a,b) => Math.abs(a.step - n.step) - Math.abs(b.step - n.step))[0];
@@ -3443,13 +3505,15 @@ class Component extends DCLogic {
       default: break;
     }
     const semantic = n.ornPlayback || n.tremoloPlayback || n.pitchPlayback || n.techniquePlayback;
-    if (semantic) {
+    if (semantic && !LEGACY_REALISED_GLYPHS[g]) {
       const pattern = String(semantic.pattern || semantic.effect || semantic.sound || '').toLowerCase();
       if (/mordent-down/.test(pattern)) rep([dnStep, 0], .07);
       else if (/mordent/.test(pattern)) rep([upStep, 0], .07);
       else if (/turn-inverted/.test(pattern)) rep([dnStep, 0, upStep, 0], .07);
       else if (/turn/.test(pattern)) rep([upStep, 0, dnStep, 0], .07);
       else if (/trill|shake/.test(pattern)) trill(/shake/.test(pattern) ? upStep + 1 : upStep, tN, tStep);
+      else if (/acciaccatura/.test(pattern)) this.playTone(m + (semantic.direction === 'down' ? dnStep : upStep), Math.max(this.audio().currentTime + .002, when - .055), .065, staff, v * .82, null);
+      else if (/appoggiatura|grace/.test(pattern)) this.playTone(m + (semantic.direction === 'down' ? dnStep : upStep), when, Math.max(.08, dur * .38), staff, v * .88, null);
       else if (/tremolo/.test(pattern) || semantic.kind === 'tremolo') {
         const strokes = Math.max(1, Number(semantic.strokes) || 1), step = strokes >= 3 ? .055 : strokes === 2 ? .085 : .13;
         for (let k = 1; k * step < dur; k++) this.playTone(m, when + k * step, step * 1.15, staff, v * .82, null);
@@ -5006,7 +5070,7 @@ class Component extends DCLogic {
         else if (ev.type === 'rehearsal') { text2 = ev.text || ev.glyph || 'A'; top = topStaff.top - 64; size = 14; extra = 'font-weight:800;border:1.5px solid var(--ink);padding:2px 6px;border-radius:2px;'; }
         else if (ev.type === 'structure' || ev.type === 'system-text') { top = topStaff.top - 42; extra = ev.type === 'system-text' ? 'font-weight:600;' : ''; }
         else if (ev.type === 'technique') { top = st.top + 63; extra = 'font-style:italic;font-weight:600;'; }
-        else if (ev.type === 'glyph' || ev.type === 'meter-glyph') { text2 = ev.glyph || ev.text || ev.name; family = 'Bravura,\'Noto Music\',serif'; size = ev.type === 'meter-glyph' ? 31 : 27; top = ev.type === 'meter-glyph' ? st.top + 3 : st.top - 28; extra = ''; }
+        else if (ev.type === 'glyph' || ev.type === 'meter-glyph' || ev.type === 'electronic' || ev.type === 'pedal-event') { text2 = ev.glyph || ev.text || ev.name; family = 'Bravura,\'Noto Music\',serif'; size = ev.type === 'meter-glyph' ? 31 : 27; top = ev.type === 'meter-glyph' ? st.top + 3 : st.top - 28; extra = ''; }
         const sel = selected ? 'outline:2px solid var(--score-accent);outline-offset:3px;background:rgba(var(--accent-rgb),.12);border-radius:2px;' : '';
         return { text: text2, ptr: (ev.name || ev.type) + ' at the cursor', onSelect: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.selectScoreObject(ev.id); }, style: ev.hidden ? 'display:none;' : 'position:absolute;left:' + (left + (ev.offsetX || 0)) + 'px;top:' + (top + (ev.offsetY || 0)) + 'px;z-index:12;cursor:pointer;color:var(--ink);white-space:nowrap;font-family:' + family + ';font-size:' + size + 'px;line-height:1;transform:scale(' + (ev.scale || 1) + ')' + (ev.flipped ? ' scaleY(-1)' : '') + ';transform-origin:center;' + extra + sel };
       }),

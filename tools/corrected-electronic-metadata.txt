@@ -1,0 +1,66 @@
+{"id": "elecAudioIn", "label": "Audio in", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecAudioOut", "label": "Audio out", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecCamera", "label": "Camera", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecVolumeFader", "label": "Combining volume fader", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecVolumeFaderThumb", "label": "Combining volume fader thumb", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecDataIn", "label": "Data in", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecDataOut", "label": "Data out", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecDisc", "label": "Disc", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecDownload", "label": "Download", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecAudioChannelsEight", "label": "Eight channels (7.1 surround)", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecEject", "label": "Eject", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecFastForward", "label": "Fast-forward", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecAudioChannelsFive", "label": "Five channels", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecAudioChannelsFour", "label": "Four channels", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecHeadphones", "label": "Headphones", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecHeadset", "label": "Headset", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecLineIn", "label": "Line in", "range": "Electronic music pictograms", "placement": "span", "kind": "line", "audible": false, "sound": null, "electronic": null}
+{"id": "elecLineOut", "label": "Line out", "range": "Electronic music pictograms", "placement": "span", "kind": "line", "audible": false, "sound": null, "electronic": null}
+{"id": "elecLoop", "label": "Loop", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecLoudspeaker", "label": "Loudspeaker", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecMIDIController0", "label": "MIDI controller 0%", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecMIDIController100", "label": "MIDI controller 100%", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecMIDIController20", "label": "MIDI controller 20%", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecMIDIController40", "label": "MIDI controller 40%", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecMIDIController60", "label": "MIDI controller 60%", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecMIDIController80", "label": "MIDI controller 80%", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecMIDIIn", "label": "MIDI in", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecMIDIOut", "label": "MIDI out", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecMicrophone", "label": "Microphone", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecMixingConsole", "label": "Mixing console", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecMonitor", "label": "Monitor", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecAudioMono", "label": "Mono audio setup", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecMute", "label": "Mute", "range": "Electronic music pictograms", "placement": "event", "kind": "technique", "audible": true, "sound": "technique", "electronic": null}
+{"id": "elecMicrophoneMute", "label": "Mute microphone", "range": "Electronic music pictograms", "placement": "event", "kind": "technique", "audible": true, "sound": "technique", "electronic": null}
+{"id": "elecAudioChannelsOne", "label": "One channel (mono)", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecPause", "label": "Pause", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecPlay", "label": "Play", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecPowerOnOff", "label": "Power on/off", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecProjector", "label": "Projector", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecReplay", "label": "Replay", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecRewind", "label": "Rewind", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecAudioChannelsSeven", "label": "Seven channels", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecShuffle", "label": "Shuffle", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecAudioChannelsSix", "label": "Six channels (5.1 surround)", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecSkipBackwards", "label": "Skip backwards", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecSkipForwards", "label": "Skip forwards", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecAudioStereo", "label": "Stereo audio setup", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecStop", "label": "Stop", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecTape", "label": "Tape", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecAudioChannelsThreeFrontal", "label": "Three channels (frontal)", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecAudioChannelsThreeSurround", "label": "Three channels (surround)", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecAudioChannelsTwo", "label": "Two channels (stereo)", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecUSB", "label": "USB connection", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecUnmute", "label": "Unmute", "range": "Electronic music pictograms", "placement": "event", "kind": "technique", "audible": true, "sound": "technique", "electronic": null}
+{"id": "elecMicrophoneUnmute", "label": "Unmute microphone", "range": "Electronic music pictograms", "placement": "event", "kind": "technique", "audible": true, "sound": "technique", "electronic": null}
+{"id": "elecUpload", "label": "Upload", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecVideoCamera", "label": "Video camera", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecVideoIn", "label": "Video in", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecVideoOut", "label": "Video out", "range": "Electronic music pictograms", "placement": "event", "kind": "glyph", "audible": false, "sound": null, "electronic": null}
+{"id": "elecVolumeLevel0", "label": "Volume level 0%", "range": "Electronic music pictograms", "placement": "event", "kind": "electronic", "audible": true, "sound": "electronic", "electronic": "level"}
+{"id": "elecVolumeLevel100", "label": "Volume level 100%", "range": "Electronic music pictograms", "placement": "event", "kind": "electronic", "audible": true, "sound": "electronic", "electronic": "level"}
+{"id": "elecVolumeLevel20", "label": "Volume level 20%", "range": "Electronic music pictograms", "placement": "event", "kind": "electronic", "audible": true, "sound": "electronic", "electronic": "level"}
+{"id": "elecVolumeLevel40", "label": "Volume level 40%", "range": "Electronic music pictograms", "placement": "event", "kind": "electronic", "audible": true, "sound": "electronic", "electronic": "level"}
+{"id": "elecVolumeLevel60", "label": "Volume level 60%", "range": "Electronic music pictograms", "placement": "event", "kind": "electronic", "audible": true, "sound": "electronic", "electronic": "level"}
+{"id": "elecVolumeLevel80", "label": "Volume level 80%", "range": "Electronic music pictograms", "placement": "event", "kind": "electronic", "audible": true, "sound": "electronic", "electronic": "level"}
+COUNT 65

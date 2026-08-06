@@ -1,0 +1,43 @@
+# Re-run after generated test moved beside repository node_modules
+name: Diagnose final SMuFL browser assertion
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/diagnose-smufl-browser.yml
+permissions:
+  contents: write
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/smufl-semantic-audit-corrections
+      - name: Apply final catalog and runtime corrections
+        run: |
+          python3 tools/correct_smufl_semantics_v5.py
+          python3 tools/apply_semantic_playback_corrections_v5.py
+      - name: Install browser runtime
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Capture exact browser assertion
+        run: |
+          python3 -m http.server 4173 >/tmp/legato-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID || true' EXIT
+          set +e
+          node tools/test_smufl_semantic_corrections_v4.mjs > tools/final-smufl-browser.txt 2>&1
+          CODE=$?
+          cat tools/final-smufl-browser.txt
+          if [ "$CODE" -ne 0 ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add tools/final-smufl-browser.txt
+            git commit -m "Capture final SMuFL browser assertion" || true
+            git push origin HEAD:fix/smufl-semantic-audit-corrections
+          fi
+          exit "$CODE"

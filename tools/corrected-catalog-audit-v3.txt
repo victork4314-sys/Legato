@@ -1,0 +1,18 @@
+PASS: glyph count
+PASS: range count
+PASS: catalog length
+PASS: control and text glyphs silent
+PASS: grace notes are not trills
+PASS: cluster noteheads are not harmonics
+PASS: performance semantic kinds audible
+PASS: controlBeginBeam silent
+PASS: acciaccatura classification
+PASS: grace slash component silent
+PASS: breath comma hold
+PASS: forte velocity
+PASS: piano velocity
+PASS: Harmon open
+PASS: Harmon closed
+PASS: standalone pedal on exists
+PASS: standalone pedal off exists
+AUDIT FAILED: electronic mute exists: []

@@ -1,0 +1,33 @@
+name: Diagnose official electronic SMuFL corrections
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - tools/audit_corrected_catalog_v3.py
+      - tools/correct_smufl_semantics_v5.py
+      - .github/workflows/diagnose-smufl-semantic-audit.yml
+permissions:
+  contents: write
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/smufl-semantic-audit-corrections
+      - name: Apply official electronic catalog correction
+        run: python3 tools/correct_smufl_semantics_v5.py
+      - name: Run metadata-resolved named audit and capture result
+        run: |
+          set +e
+          python3 tools/audit_corrected_catalog_v3.py > tools/corrected-catalog-audit-v5.txt 2>&1
+          CODE=$?
+          cat tools/corrected-catalog-audit-v5.txt
+          if [ "$CODE" -ne 0 ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add tools/corrected-catalog-audit-v5.txt
+            git commit -m "Capture official electronic catalog audit failure" || true
+            git push origin HEAD:fix/smufl-semantic-audit-corrections
+          fi
+          exit "$CODE"
