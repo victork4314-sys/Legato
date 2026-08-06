@@ -60,13 +60,13 @@ jobs:
             -DGGML_OPENMP=OFF
           cmake --build /tmp/whisper-build --target "$build_target" --parallel 2
 
-          command_js=/tmp/whisper-build/bin/libcommand.js
-          helpers_js=/tmp/whisper.cpp/examples/command.wasm/helpers.js
+          command_js=/tmp/whisper-build/bin/command.wasm/command.js
+          helpers_js=/tmp/whisper.cpp/examples/helpers.js
           coi_js=/tmp/whisper.cpp/examples/coi-serviceworker.js
           worker_js=/tmp/whisper-build/bin/libcommand.worker.js
 
           echo "Generated command engine files:"
-          find /tmp/whisper-build/bin -maxdepth 1 -type f -printf '%f %s bytes\n' | sort
+          find /tmp/whisper-build/bin -maxdepth 2 -type f -printf '%p %s bytes\n' | sort
           echo "Selected command_js=$command_js"
           echo "Selected helpers_js=$helpers_js"
           echo "Selected coi_js=$coi_js"
