@@ -1,5 +1,7 @@
 {
-  "version": "61bf3f6e995e391f79bee04c40eabfc49f355278",
+  "version": "bdf36cd4ffc59f405c257f5933837d03906514ff",
   "audited": true,
-  "catalogEntries": 3451
+  "catalogEntries": 3451,
+  "voiceLanguageTests": 64,
+  "voiceRuntimeTests": 19
 }
